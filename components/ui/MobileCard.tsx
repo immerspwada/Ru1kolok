@@ -1,4 +1,8 @@
+'use client';
+
 import { ReactNode } from 'react';
+import { LogOut } from 'lucide-react';
+import { simpleSignOut } from '@/lib/auth/simple-actions';
 
 interface MobileCardProps {
   children: ReactNode;
@@ -24,11 +28,6 @@ interface MobileHeaderProps {
   subtitle?: string;
   action?: ReactNode;
 }
-
-'use client';
-
-import { LogOut } from 'lucide-react';
-import { simpleSignOut } from '@/lib/auth/simple-actions';
 
 export function MobileHeader({ title, subtitle, action }: MobileHeaderProps) {
   const handleLogout = async () => {

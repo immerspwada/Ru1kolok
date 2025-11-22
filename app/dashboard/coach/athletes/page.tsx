@@ -41,7 +41,7 @@ export default async function CoachAthletesPage() {
   const { data: athletes } = (await supabase
     .from('athletes')
     .select('*')
-    .eq('club_id', coach.club_id)
+    .eq('club_id', (coach as any).club_id)
     .order('first_name', { ascending: true })) as { data: Athlete[] | null };
 
   return (

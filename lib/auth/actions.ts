@@ -33,7 +33,18 @@ export async function signUp(email: string, password: string): Promise<AuthResul
   }
 }
 
-export async function signIn(email: string, password: string): Promise<AuthResult> {
+export async function signIn(
+  email: string,
+  password: string,
+  deviceInfo?: {
+    deviceId: string;
+    userAgent?: string;
+    platform?: string;
+    language?: string;
+    screenResolution?: string;
+    timezone?: string;
+  }
+): Promise<AuthResult> {
   try {
     console.log('[signIn] Starting authentication for:', email);
     const supabase = await createClient();
@@ -50,6 +61,23 @@ export async function signIn(email: string, password: string): Promise<AuthResul
     }
 
     console.log('[signIn] Authentication successful for user:', authData.user.id);
+
+    // Step 2: Record login session with device info
+    if (deviceInfo) {
+      try {
+        // Type assertion needed until TypeScript picks up the new database types
+        await (supabase.from('login_sessions') as any).insert({
+          user_id: authData.user.id,
+          device_id: deviceInfo.deviceId,
+          device_info: deviceInfo,
+          user_agent: deviceInfo.userAgent,
+        });
+        console.log('[signIn] Device info recorded:', deviceInfo.deviceId);
+      } catch (error) {
+        console.error('[signIn] Failed to record device info:', error);
+        // Don't fail login if device tracking fails
+      }
+    }
 
     type UserRole = 'admin' | 'coach' | 'athlete';
     let role: UserRole = 'athlete';
@@ -73,9 +101,39 @@ export async function signIn(email: string, password: string): Promise<AuthResul
   }
 }
 
-export async function signOut(): Promise<AuthResult> {
+export async function signOut(deviceId?: string): Promise<AuthResult> {
   try {
     const supabase = await createClient();
+
+    // Record logout time if device ID is provided
+    if (deviceId) {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          // Type assertion needed until TypeScript picks up the new database types
+          const { data: session } = await (supabase.from('login_sessions') as any)
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('device_id', deviceId)
+            .is('logout_at', null)
+            .order('login_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (session) {
+            // Type assertion needed until TypeScript picks up the new database types
+            await (supabase.from('login_sessions') as any)
+              .update({ logout_at: new Date().toISOString() })
+              .eq('id', session.id);
+          }
+        }
+      } catch (error) {
+        console.error('[signOut] Failed to record logout:', error);
+        // Don't fail logout if device tracking fails
+      }
+    }
 
     const { error } = await supabase.auth.signOut();
 

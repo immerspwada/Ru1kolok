@@ -81,9 +81,9 @@ export async function createSession(data: {
       location: data.location.trim(),
     };
 
-    // @ts-ignore - Supabase type inference issue
-    const { data: session, error: insertError } = await supabase
-      .from('training_sessions')
+    // Type assertion needed until TypeScript picks up the new database types
+    const { data: session, error: insertError } = await (supabase
+      .from('training_sessions') as any)
       .insert(sessionData)
       .select()
       .single();
@@ -207,8 +207,9 @@ export async function updateSession(
 
     // Update session
     // @ts-ignore - Supabase type inference issue
-    const { error: updateError } = await supabase
-      .from('training_sessions')
+    // Type assertion needed until TypeScript picks up the new database types
+    const { error: updateError } = await (supabase
+      .from('training_sessions') as any)
       .update(updateData)
       .eq('id', sessionId);
 

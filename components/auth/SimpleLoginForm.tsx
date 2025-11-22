@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from '@/lib/auth/actions';
+import { getDeviceInfo } from '@/lib/utils/device-fingerprint';
 import Link from 'next/link';
 
 const TEST_USERS = {
@@ -44,7 +45,10 @@ export function SimpleLoginForm() {
     setLoading(true);
 
     try {
-      const result = await signIn(email, password);
+      // Get device information for tracking
+      const deviceInfo = getDeviceInfo();
+      
+      const result = await signIn(email, password, deviceInfo);
 
       if (!result.success) {
         setError(result.error || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
@@ -79,13 +83,23 @@ export function SimpleLoginForm() {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8">
+      <style jsx>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+          20%, 40%, 60%, 80% { transform: translateX(4px); }
+        }
+        .animate-shake {
+          animation: shake 0.5s ease-in-out;
+        }
+      `}</style>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8 animate-fade-in">
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
             เข้าสู่ระบบ
           </h1>
-          <p className="text-sm text-gray-600">
+          <p className="text-base sm:text-lg text-gray-600">
             ระบบจัดการสโมสรกีฬา
           </p>
         </div>
@@ -93,33 +107,45 @@ export function SimpleLoginForm() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label htmlFor="email" className="block text-base font-medium text-gray-700 mb-2">
               อีเมล
             </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="your.email@example.com"
-              required
-              disabled={loading}
-              autoComplete="email"
-            />
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-11 pr-4 py-3.5 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                placeholder="ใส่อีเมลของท่านที่นี้"
+                required
+                disabled={loading}
+                autoComplete="email"
+              />
+            </div>
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label htmlFor="password" className="block text-base font-medium text-gray-700 mb-2">
               รหัสผ่าน
             </label>
             <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+              </div>
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 pr-12 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-11 pr-12 py-3.5 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 placeholder="••••••••"
                 required
                 disabled={loading}
@@ -152,72 +178,95 @@ export function SimpleLoginForm() {
               type="checkbox"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+              className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
               disabled={loading}
             />
-            <label htmlFor="remember" className="ml-2 text-sm text-gray-700">
+            <label htmlFor="remember" className="ml-2 text-base text-gray-700">
               จดจำรหัสผ่าน
             </label>
           </div>
 
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-              {error}
-            </div>
-          )}
+          {/* Error Message with Fade-in Animation */}
+          <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+            error ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'
+          }`}>
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-base text-red-700 animate-shake">
+                {error}
+              </div>
+            )}
+          </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 text-base bg-blue-600 text-white font-medium rounded-lg active:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors touch-manipulation"
+            className="w-full py-3.5 text-lg bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg active:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 touch-manipulation transform hover:scale-[1.02] active:scale-[0.98]"
           >
-            {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                กำลังเข้าสู่ระบบ...
+              </span>
+            ) : (
+              'เข้าสู่ระบบ'
+            )}
           </button>
         </form>
 
-        {/* Register Link */}
-        <div className="mt-6 text-center text-sm text-gray-600">
+        {/* Register Link with Hover Effect */}
+        <div className="mt-6 text-center text-base text-gray-600">
           ยังไม่มีบัญชี?{' '}
-          <Link href="/register" className="text-blue-600 active:text-blue-700 font-medium touch-manipulation">
+          <Link 
+            href="/register" 
+            className="text-blue-600 hover:text-blue-700 active:text-blue-700 font-medium touch-manipulation transition-colors duration-200 hover:underline"
+          >
             สมัครสมาชิก
           </Link>
         </div>
 
-        {/* Test Credentials */}
+        {/* Test Credentials with Slide-down Animation */}
         <div className="mt-6 pt-6 border-t border-gray-200">
           <button
             type="button"
             onClick={() => setShowTestCredentials(!showTestCredentials)}
-            className="w-full text-xs text-gray-500 active:text-gray-700 font-medium py-2 touch-manipulation"
+            className="w-full text-sm text-gray-500 active:text-gray-700 font-medium py-2 touch-manipulation transition-colors"
           >
-            {showTestCredentials ? '▼' : '▶'} ข้อมูลทดสอบ
+            <span className={`inline-block transition-transform duration-200 ${showTestCredentials ? 'rotate-90' : ''}`}>
+              ▶
+            </span>{' '}
+            ข้อมูลทดสอบ
           </button>
           
-          {showTestCredentials && (
-            <div className="mt-3 space-y-2">
+          <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+            showTestCredentials ? 'max-h-96 opacity-100 mt-3' : 'max-h-0 opacity-0'
+          }`}>
+            <div className="space-y-2">
               <button
                 type="button"
                 onClick={() => fillCredentials('admin')}
-                className="w-full px-3 py-3 text-sm bg-gray-50 active:bg-gray-100 border border-gray-200 rounded-lg transition-colors touch-manipulation"
+                className="w-full px-3 py-3 text-base bg-gray-50 hover:bg-gray-100 active:bg-gray-100 border border-gray-200 rounded-lg transition-all duration-200 touch-manipulation transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 👨‍💼 Admin
               </button>
               <button
                 type="button"
                 onClick={() => fillCredentials('coach')}
-                className="w-full px-3 py-3 text-sm bg-gray-50 active:bg-gray-100 border border-gray-200 rounded-lg transition-colors touch-manipulation"
+                className="w-full px-3 py-3 text-base bg-gray-50 hover:bg-gray-100 active:bg-gray-100 border border-gray-200 rounded-lg transition-all duration-200 touch-manipulation transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 🏃‍♂️ Coach
               </button>
               <button
                 type="button"
                 onClick={() => fillCredentials('athlete')}
-                className="w-full px-3 py-3 text-sm bg-gray-50 active:bg-gray-100 border border-gray-200 rounded-lg transition-colors touch-manipulation"
+                className="w-full px-3 py-3 text-base bg-gray-50 hover:bg-gray-100 active:bg-gray-100 border border-gray-200 rounded-lg transition-all duration-200 touch-manipulation transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 🏅 Athlete
               </button>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

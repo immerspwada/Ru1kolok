@@ -80,7 +80,7 @@ export async function createAuditLog(params: CreateAuditLogParams) {
         details: params.details || null,
         ip_address: params.ipAddress || null,
         user_agent: params.userAgent || null,
-      })
+      } as any)
       .select()
       .single();
 

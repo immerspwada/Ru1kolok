@@ -10,6 +10,8 @@ import {
   FileText,
   Settings,
   LogOut,
+  Calendar,
+  ClipboardCheck,
 } from 'lucide-react';
 import { signOut } from '@/lib/auth/actions';
 
@@ -18,6 +20,8 @@ const navigation = [
   { name: 'Clubs', href: '/dashboard/admin/clubs', icon: Building2 },
   { name: 'Coaches', href: '/dashboard/admin/coaches', icon: UserCog },
   { name: 'Athletes', href: '/dashboard/admin/athletes', icon: Users },
+  { name: 'Sessions', href: '/dashboard/admin/sessions', icon: Calendar },
+  { name: 'Attendance', href: '/dashboard/admin/attendance', icon: ClipboardCheck },
   { name: 'Reports', href: '/dashboard/admin/reports', icon: FileText },
   { name: 'Settings', href: '/dashboard/admin/settings', icon: Settings },
 ];

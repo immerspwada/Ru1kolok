@@ -268,6 +268,199 @@ export async function markAttendance(data: {
 }
 
 /**
+ * Get leave requests for coach's sessions
+ */
+export async function getLeaveRequests(filter?: {
+  status?: 'pending' | 'approved' | 'rejected';
+  sessionId?: string;
+}): Promise<{
+  data?: any[];
+  error?: string;
+}> {
+  try {
+    const supabase = await createClient();
+
+    // Get current user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { error: 'ไม่ได้รับอนุญาต: กรุณาเข้าสู่ระบบ' };
+    }
+
+    // Get coach profile
+    const { data: coach, error: coachError } = await supabase
+      .from('coaches')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (coachError || !coach) {
+      return { error: 'ไม่พบข้อมูลโค้ช' };
+    }
+
+    // Build query for leave requests
+    let query = supabase
+      .from('leave_requests')
+      .select(`
+        *,
+        training_sessions!inner(*),
+        athletes!inner(*)
+      `)
+      // @ts-ignore
+      .eq('training_sessions.coach_id', user.id);
+
+    // Apply filters
+    if (filter?.status) {
+      query = query.eq('status', filter.status);
+    }
+
+    if (filter?.sessionId) {
+      query = query.eq('session_id', filter.sessionId);
+    }
+
+    query = query.order('requested_at', { ascending: false });
+
+    const { data: leaveRequests, error: requestsError } = await query;
+
+    if (requestsError) {
+      console.error('Leave requests query error:', requestsError);
+      return { error: 'เกิดข้อผิดพลาดในการดึงข้อมูลคำขอลา' };
+    }
+
+    return { data: leaveRequests };
+  } catch (error) {
+    console.error('Unexpected error in getLeaveRequests:', error);
+    return { error: 'เกิดข้อผิดพลาดที่ไม่คาดคิด' };
+  }
+}
+
+/**
+ * Review (approve or reject) a leave request
+ */
+export async function reviewLeaveRequest(
+  leaveRequestId: string,
+  action: 'approve' | 'reject'
+): Promise<{ success?: boolean; error?: string }> {
+  try {
+    const supabase = await createClient();
+
+    // Get current user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { error: 'ไม่ได้รับอนุญาต: กรุณาเข้าสู่ระบบ' };
+    }
+
+    // Get coach profile
+    const { data: coach, error: coachError } = await supabase
+      .from('coaches')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (coachError || !coach) {
+      return { error: 'ไม่พบข้อมูลโค้ช' };
+    }
+
+    // Get leave request and verify coach owns the session
+    const { data: leaveRequest, error: requestError } = await supabase
+      .from('leave_requests')
+      .select('*, training_sessions!inner(*)')
+      .eq('id', leaveRequestId)
+      .single();
+
+    if (requestError || !leaveRequest) {
+      return { error: 'ไม่พบคำขอลา' };
+    }
+
+    // @ts-ignore
+    if (leaveRequest.training_sessions.coach_id !== user.id) {
+      return { error: 'ไม่ได้รับอนุญาต: คุณไม่สามารถอนุมัติคำขอลาในตารางของโค้ชอื่นได้' };
+    }
+
+    // @ts-ignore
+    if (leaveRequest.status !== 'pending') {
+      return { error: 'คำขอลานี้ได้รับการพิจารณาแล้ว' };
+    }
+
+    // Update leave request status
+    const newStatus = action === 'approve' ? 'approved' : 'rejected';
+    const { error: updateError } = await supabase
+      .from('leave_requests')
+      .update({
+        status: newStatus,
+        // @ts-ignore
+        reviewed_by: coach.id,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq('id', leaveRequestId);
+
+    if (updateError) {
+      console.error('Update error:', updateError);
+      return { error: 'เกิดข้อผิดพลาดในการอัปเดตคำขอลา' };
+    }
+
+    // If approved, create an excused attendance record
+    if (action === 'approve') {
+      // @ts-ignore
+      const sessionId = leaveRequest.session_id;
+      // @ts-ignore
+      const athleteId = leaveRequest.athlete_id;
+
+      // Check if attendance already exists
+      const { data: existingAttendance } = await supabase
+        .from('attendance')
+        .select('*')
+        .eq('training_session_id', sessionId)
+        .eq('athlete_id', athleteId)
+        .maybeSingle();
+
+      if (!existingAttendance) {
+        // Create excused attendance record
+        const { error: attendanceError } = await supabase
+          .from('attendance')
+          .insert({
+            training_session_id: sessionId,
+            athlete_id: athleteId,
+            status: 'excused',
+            check_in_method: 'manual',
+            // @ts-ignore
+            notes: `Leave approved: ${leaveRequest.reason}`,
+          });
+
+        if (attendanceError) {
+          console.error('Attendance creation error:', attendanceError);
+          // Don't fail the whole operation if attendance creation fails
+        }
+      }
+    }
+
+    // Log audit event
+    await createAuditLog({
+      userId: user.id,
+      actionType: 'attendance.update',
+      entityType: 'attendance_log',
+      entityId: leaveRequestId,
+      details: { action, status: newStatus },
+    });
+
+    revalidatePath('/dashboard/coach/attendance');
+    revalidatePath('/dashboard/coach/sessions');
+
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error in reviewLeaveRequest:', error);
+    return { error: 'เกิดข้อผิดพลาดที่ไม่คาดคิด' };
+  }
+}
+
+/**
  * Update attendance for an athlete
  */
 export async function updateAttendance(

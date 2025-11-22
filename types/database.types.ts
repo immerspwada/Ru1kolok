@@ -330,6 +330,32 @@ export interface Database {
           updated_at?: string;
         };
       };
+      login_sessions: {
+        Row: {
+          id: string;
+          user_id: string;
+          device_id: string;
+          device_info: Json;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          device_id: string;
+          device_info: Json;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          device_id?: string;
+          device_info?: Json;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+      };
     };
   };
 }
