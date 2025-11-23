@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { Database } from '@/types/database.types';
 import { createAuditLog } from '@/lib/audit/actions';
+import { getCached, invalidatePattern } from '@/lib/utils/cache';
 
 type TrainingSession = Database['public']['Tables']['training_sessions']['Row'];
 
@@ -48,6 +49,7 @@ interface ClubStats {
 /**
  * Get all training sessions across all clubs
  * Admin can view all sessions in the system
+ * OPTIMIZED: Added pagination and removed N+1 query for attendance counts
  */
 export async function getAllSessions(filter?: {
   clubId?: string;
@@ -55,7 +57,8 @@ export async function getAllSessions(filter?: {
   endDate?: string;
   status?: string;
   limit?: number;
-}): Promise<{ data?: SessionWithDetails[]; error?: string }> {
+  offset?: number;
+}): Promise<{ data?: SessionWithDetails[]; total?: number; error?: string }> {
   try {
     const supabase = await createClient();
 
@@ -81,7 +84,10 @@ export async function getAllSessions(filter?: {
       return { error: 'ไม่ได้รับอนุญาต: ต้องเป็นแอดมินเท่านั้น' };
     }
 
-    // Build query
+    // Build query with pagination defaults
+    const limit = filter?.limit || 50; // Default page size
+    const offset = filter?.offset || 0;
+
     let query = supabase
       .from('training_sessions')
       .select(`
@@ -96,9 +102,10 @@ export async function getAllSessions(filter?: {
           first_name,
           last_name
         )
-      `)
+      `, { count: 'exact' })
       .order('session_date', { ascending: false })
-      .order('start_time', { ascending: false });
+      .order('start_time', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     // Apply filters
     if (filter?.clubId) {
@@ -117,36 +124,46 @@ export async function getAllSessions(filter?: {
       query = query.eq('status', filter.status);
     }
 
-    if (filter?.limit) {
-      query = query.limit(filter.limit);
-    }
-
-    const { data: sessions, error: sessionsError } = await query;
+    const { data: sessions, error: sessionsError, count } = await query;
 
     if (sessionsError) {
       console.error('Sessions query error:', sessionsError);
       return { error: 'เกิดข้อผิดพลาดในการดึงข้อมูลตารางฝึกซ้อม' };
     }
 
-    // Get attendance counts for each session
-    const sessionsWithCounts = await Promise.all(
-      (sessions || []).map(async (session) => {
-        const { count } = await supabase
-          .from('attendance')
-          .select('*', { count: 'exact', head: true })
-          // @ts-ignore
-          .eq('session_id', session.id)
-          .eq('status', 'present');
+    // OPTIMIZED: Fetch all attendance counts in a single query using aggregation
+    // Get session IDs
+    const sessionIds = (sessions || []).map((s: any) => s.id);
+    
+    if (sessionIds.length === 0) {
+      return { data: [], total: count || 0 };
+    }
 
-        return {
-          // @ts-ignore
-          ...session,
-          attendance_count: count || 0,
-        };
-      })
-    );
+    // Fetch attendance counts for all sessions at once
+    const { data: attendanceCounts, error: countError } = await supabase
+      .from('attendance')
+      .select('training_session_id')
+      .in('training_session_id', sessionIds)
+      .eq('status', 'present');
 
-    return { data: sessionsWithCounts };
+    if (countError) {
+      console.error('Attendance count error:', countError);
+    }
+
+    // Create a map of session_id -> count
+    const countMap = new Map<string, number>();
+    (attendanceCounts || []).forEach((record: any) => {
+      const sessionId = record.training_session_id;
+      countMap.set(sessionId, (countMap.get(sessionId) || 0) + 1);
+    });
+
+    // Add counts to sessions
+    const sessionsWithCounts = (sessions || []).map((session: any) => ({
+      ...session,
+      attendance_count: countMap.get(session.id) || 0,
+    }));
+
+    return { data: sessionsWithCounts, total: count || 0 };
   } catch (error) {
     console.error('Unexpected error in getAllSessions:', error);
     return { error: 'เกิดข้อผิดพลาดที่ไม่คาดคิด' };
@@ -156,8 +173,36 @@ export async function getAllSessions(filter?: {
 /**
  * Get system-wide attendance statistics
  * Provides overview of all attendance across the system
+ * OPTIMIZED: Added caching with 5-minute TTL
  */
 export async function getAttendanceStats(filter?: {
+  startDate?: string;
+  endDate?: string;
+}): Promise<{ data?: SystemAttendanceStats; error?: string }> {
+  try {
+    // Create cache key based on filters
+    const cacheKey = `attendance-stats:${filter?.startDate || 'all'}:${filter?.endDate || 'all'}`;
+    
+    // Try to get from cache (5 minute TTL)
+    const cached = await getCached<{ data?: SystemAttendanceStats; error?: string }>(
+      cacheKey,
+      async () => {
+        return await computeAttendanceStats(filter);
+      },
+      5 * 60 * 1000 // 5 minutes
+    );
+    
+    return cached;
+  } catch (error) {
+    console.error('Unexpected error in getAttendanceStats:', error);
+    return { error: 'เกิดข้อผิดพลาดที่ไม่คาดคิด' };
+  }
+}
+
+/**
+ * Internal function to compute attendance stats
+ */
+async function computeAttendanceStats(filter?: {
   startDate?: string;
   endDate?: string;
 }): Promise<{ data?: SystemAttendanceStats; error?: string }> {
@@ -273,8 +318,36 @@ export async function getAttendanceStats(filter?: {
 /**
  * Get attendance statistics broken down by club
  * Shows performance comparison across clubs
+ * OPTIMIZED: Eliminated N+1 queries by fetching all data in bulk + caching
  */
 export async function getClubStats(filter?: {
+  startDate?: string;
+  endDate?: string;
+}): Promise<{ data?: ClubStats[]; error?: string }> {
+  try {
+    // Create cache key based on filters
+    const cacheKey = `club-stats:${filter?.startDate || 'all'}:${filter?.endDate || 'all'}`;
+    
+    // Try to get from cache (5 minute TTL)
+    const cached = await getCached<{ data?: ClubStats[]; error?: string }>(
+      cacheKey,
+      async () => {
+        return await computeClubStats(filter);
+      },
+      5 * 60 * 1000 // 5 minutes
+    );
+    
+    return cached;
+  } catch (error) {
+    console.error('Unexpected error in getClubStats:', error);
+    return { error: 'เกิดข้อผิดพลาดที่ไม่คาดคิด' };
+  }
+}
+
+/**
+ * Internal function to compute club stats
+ */
+async function computeClubStats(filter?: {
   startDate?: string;
   endDate?: string;
 }): Promise<{ data?: ClubStats[]; error?: string }> {
@@ -314,65 +387,89 @@ export async function getClubStats(filter?: {
       return { error: 'เกิดข้อผิดพลาดในการดึงข้อมูลสโมสร' };
     }
 
-    // Get stats for each club
-    const clubStatsPromises = (clubs || []).map(async (club) => {
-      // Get sessions count for this club
-      let sessionsQuery = supabase
-        .from('training_sessions')
-        .select('*', { count: 'exact', head: true })
-        // @ts-ignore
-        .eq('club_id', club.id);
+    if (!clubs || clubs.length === 0) {
+      return { data: [] };
+    }
 
-      if (filter?.startDate) {
-        sessionsQuery = sessionsQuery.gte('session_date', filter.startDate);
-      }
+    // OPTIMIZED: Fetch all sessions for all clubs in one query
+    let sessionsQuery = supabase
+      .from('training_sessions')
+      .select('id, club_id');
 
-      if (filter?.endDate) {
-        sessionsQuery = sessionsQuery.lte('session_date', filter.endDate);
-      }
+    if (filter?.startDate) {
+      sessionsQuery = sessionsQuery.gte('session_date', filter.startDate);
+    }
 
-      const { count: totalSessions } = await sessionsQuery;
+    if (filter?.endDate) {
+      sessionsQuery = sessionsQuery.lte('session_date', filter.endDate);
+    }
 
-      // Get attendance records for this club's sessions
-      let attendanceQuery = supabase
-        .from('attendance')
-        .select(`
-          *,
-          training_sessions!inner (
-            club_id,
-            session_date
-          )
-        `)
-        // @ts-ignore
-        .eq('training_sessions.club_id', club.id);
+    const { data: allSessions, error: sessionsError } = await sessionsQuery;
 
-      if (filter?.startDate) {
-        // @ts-ignore
-        attendanceQuery = attendanceQuery.gte('training_sessions.session_date', filter.startDate);
-      }
+    if (sessionsError) {
+      console.error('Sessions query error:', sessionsError);
+      return { error: 'เกิดข้อผิดพลาดในการดึงข้อมูลตารางฝึกซ้อม' };
+    }
 
-      if (filter?.endDate) {
-        // @ts-ignore
-        attendanceQuery = attendanceQuery.lte('training_sessions.session_date', filter.endDate);
-      }
+    // OPTIMIZED: Fetch all attendance records for all clubs in one query
+    let attendanceQuery = supabase
+      .from('attendance')
+      .select(`
+        athlete_id,
+        status,
+        training_sessions!inner (
+          club_id,
+          session_date
+        )
+      `);
 
-      const { data: attendanceRecords, error: attendanceError } = await attendanceQuery;
-
-      if (attendanceError) {
-        // @ts-ignore
-        console.error(`Attendance query error for club ${club.id}:`, attendanceError);
-      }
-
-      // Calculate statistics
-      const totalAttendanceRecords = attendanceRecords?.length || 0;
+    if (filter?.startDate) {
       // @ts-ignore
-      const presentCount = attendanceRecords?.filter((a) => a.status === 'present').length || 0;
+      attendanceQuery = attendanceQuery.gte('training_sessions.session_date', filter.startDate);
+    }
+
+    if (filter?.endDate) {
       // @ts-ignore
-      const absentCount = attendanceRecords?.filter((a) => a.status === 'absent').length || 0;
+      attendanceQuery = attendanceQuery.lte('training_sessions.session_date', filter.endDate);
+    }
+
+    const { data: allAttendance, error: attendanceError } = await attendanceQuery;
+
+    if (attendanceError) {
+      console.error('Attendance query error:', attendanceError);
+      return { error: 'เกิดข้อผิดพลาดในการดึงข้อมูลการเข้าร่วม' };
+    }
+
+    // Build maps for efficient lookup
+    const sessionsByClub = new Map<string, number>();
+    (allSessions || []).forEach((session: any) => {
+      const clubId = session.club_id;
+      sessionsByClub.set(clubId, (sessionsByClub.get(clubId) || 0) + 1);
+    });
+
+    const attendanceByClub = new Map<string, any[]>();
+    (allAttendance || []).forEach((record: any) => {
       // @ts-ignore
-      const excusedCount = attendanceRecords?.filter((a) => a.status === 'excused').length || 0;
-      // @ts-ignore
-      const lateCount = attendanceRecords?.filter((a) => a.status === 'late').length || 0;
+      const clubId = record.training_sessions?.club_id;
+      if (clubId) {
+        if (!attendanceByClub.has(clubId)) {
+          attendanceByClub.set(clubId, []);
+        }
+        attendanceByClub.get(clubId)!.push(record);
+      }
+    });
+
+    // Calculate stats for each club
+    const clubStats: ClubStats[] = clubs.map((club: any) => {
+      const clubId = club.id;
+      const totalSessions = sessionsByClub.get(clubId) || 0;
+      const attendanceRecords = attendanceByClub.get(clubId) || [];
+      
+      const totalAttendanceRecords = attendanceRecords.length;
+      const presentCount = attendanceRecords.filter((a: any) => a.status === 'present').length;
+      const absentCount = attendanceRecords.filter((a: any) => a.status === 'absent').length;
+      const excusedCount = attendanceRecords.filter((a: any) => a.status === 'excused').length;
+      const lateCount = attendanceRecords.filter((a: any) => a.status === 'late').length;
 
       // Calculate attendance rate
       const attendanceRate =
@@ -380,21 +477,17 @@ export async function getClubStats(filter?: {
           ? Math.round(((presentCount + lateCount) / totalAttendanceRecords) * 100 * 10) / 10
           : 0;
 
-      // Get count of unique active athletes in this club
+      // Get count of unique active athletes
       const uniqueAthletes = new Set(
-        // @ts-ignore
-        attendanceRecords?.map((record) => record.athlete_id) || []
+        attendanceRecords.map((record: any) => record.athlete_id)
       );
       const activeAthletes = uniqueAthletes.size;
 
-      const clubStat: ClubStats = {
-        // @ts-ignore
-        clubId: club.id,
-        // @ts-ignore
+      return {
+        clubId,
         clubName: club.name,
-        // @ts-ignore
         sportType: club.sport_type,
-        totalSessions: totalSessions || 0,
+        totalSessions,
         totalAttendanceRecords,
         attendanceRate,
         presentCount,
@@ -403,11 +496,7 @@ export async function getClubStats(filter?: {
         lateCount,
         activeAthletes,
       };
-
-      return clubStat;
     });
-
-    const clubStats = await Promise.all(clubStatsPromises);
 
     // Sort by attendance rate (highest first)
     clubStats.sort((a, b) => b.attendanceRate - a.attendanceRate);

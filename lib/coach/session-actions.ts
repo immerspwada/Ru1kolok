@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { createAuditLog } from '@/lib/audit/actions';
 import { Database } from '@/types/database.types';
+import { invalidatePattern } from '@/lib/utils/cache';
 
 type TrainingSession = Database['public']['Tables']['training_sessions']['Row'];
 type TrainingSessionInsert = Database['public']['Tables']['training_sessions']['Insert'];
@@ -104,6 +105,10 @@ export async function createSession(data: {
     });
 
     revalidatePath('/dashboard/coach/sessions');
+
+    // Invalidate stats cache
+    invalidatePattern('attendance-stats:.*');
+    invalidatePattern('club-stats:.*');
 
     return { success: true, data: session };
   } catch (error) {
@@ -323,11 +328,14 @@ export async function cancelSession(sessionId: string): Promise<{ success?: bool
 
 /**
  * Get all training sessions for a coach
+ * OPTIMIZED: Added pagination support
  */
 export async function getCoachSessions(filter?: {
   upcoming?: boolean;
   past?: boolean;
-}): Promise<{ data?: TrainingSession[]; error?: string }> {
+  limit?: number;
+  offset?: number;
+}): Promise<{ data?: TrainingSession[]; total?: number; error?: string }> {
   try {
     const supabase = await createClient();
 
@@ -352,15 +360,19 @@ export async function getCoachSessions(filter?: {
       return { error: 'ไม่พบข้อมูลโค้ช' };
     }
 
-    // Build query
+    // Build query with pagination
+    const limit = filter?.limit || 100; // Default limit
+    const offset = filter?.offset || 0;
+
     // @ts-ignore
     let query = supabase
       .from('training_sessions')
-      .select('*')
+      .select('*', { count: 'exact' })
       // @ts-ignore
       .eq('coach_id', coach.id)
       .order('session_date', { ascending: true })
-      .order('start_time', { ascending: true });
+      .order('start_time', { ascending: true })
+      .range(offset, offset + limit - 1);
 
     // Apply filters
     const today = new Date().toISOString().split('T')[0];
@@ -371,14 +383,14 @@ export async function getCoachSessions(filter?: {
       query = query.lt('session_date', today);
     }
 
-    const { data: sessions, error: sessionsError } = await query;
+    const { data: sessions, error: sessionsError, count } = await query;
 
     if (sessionsError) {
       console.error('Query error:', sessionsError);
       return { error: 'เกิดข้อผิดพลาดในการดึงข้อมูลตารางฝึกซ้อม' };
     }
 
-    return { data: sessions };
+    return { data: sessions, total: count || 0 };
   } catch (error) {
     console.error('Unexpected error in getCoachSessions:', error);
     return { error: 'เกิดข้อผิดพลาดที่ไม่คาดคิด' };

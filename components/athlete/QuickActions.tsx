@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { User, Calendar, Activity, LucideIcon } from 'lucide-react';
+import { User, Calendar, Activity, FileText, LucideIcon } from 'lucide-react';
 
 interface QuickActionProps {
   href: string;
@@ -32,7 +32,7 @@ function QuickActionCard({
 
 export default function QuickActions() {
   return (
-    <div className="grid gap-6 md:grid-cols-3">
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       <QuickActionCard
         href="/dashboard/athlete/profile"
         icon={User}
@@ -53,6 +53,13 @@ export default function QuickActions() {
         title="ผลการทดสอบ"
         description="ดูผลการทดสอบและความก้าวหน้า"
         color="text-purple-600"
+      />
+      <QuickActionCard
+        href="/dashboard/athlete/applications"
+        icon={FileText}
+        title="ใบสมัครของฉัน"
+        description="ดูสถานะการสมัครสมาชิก"
+        color="text-orange-600"
       />
     </div>
   );

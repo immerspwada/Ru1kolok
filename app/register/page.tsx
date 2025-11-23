@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { RegistrationForm } from '@/components/auth/RegistrationForm';
+import { SimpleRegistrationForm } from '@/components/auth/SimpleRegistrationForm';
 import { redirect } from 'next/navigation';
 
 export default async function RegisterPage() {
@@ -11,15 +11,13 @@ export default async function RegisterPage() {
   } = await supabase.auth.getUser();
 
   if (user) {
-    redirect('/dashboard');
+    // If already logged in, redirect to membership registration
+    redirect('/register-membership');
   }
-
-  // Fetch available clubs
-  const { data: clubs } = await supabase.from('clubs').select('id, name, sport_type').order('name');
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <RegistrationForm clubs={clubs || []} />
+      <SimpleRegistrationForm />
     </div>
   );
 }

@@ -11,6 +11,65 @@ export type CheckInMethod = 'manual' | 'qr' | 'auto';
 
 export type AnnouncementPriority = 'low' | 'normal' | 'high' | 'urgent';
 
+export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected';
+
+// Membership Application Types
+export type ApplicationStatus = 'pending' | 'approved' | 'rejected' | 'info_requested';
+
+export type DocumentType = 'id_card' | 'house_registration' | 'birth_certificate';
+
+export interface PersonalInfo {
+  full_name: string;
+  phone_number: string;
+  address: string;
+  emergency_contact: string;
+  date_of_birth?: string;
+  blood_type?: string;
+  medical_conditions?: string;
+}
+
+export interface DocumentEntry {
+  type: DocumentType;
+  url: string;
+  uploaded_at: string;
+  file_name: string;
+  file_size: number;
+  is_verified?: boolean;
+}
+
+export interface ReviewInfo {
+  reviewed_by: string;
+  reviewed_at: string;
+  reviewer_role: UserRole;
+  notes?: string;
+  requested_changes?: string[];
+}
+
+export interface ActivityLogEntry {
+  timestamp: string;
+  action: string;
+  by_user: string;
+  by_role: UserRole;
+  details?: Record<string, any>;
+  from?: string;
+  to?: string;
+  notes?: string;
+}
+
+export interface MembershipApplication {
+  id: string;
+  user_id: string;
+  club_id: string;
+  personal_info: PersonalInfo;
+  documents: DocumentEntry[];
+  status: ApplicationStatus;
+  review_info?: ReviewInfo;
+  activity_log: ActivityLogEntry[];
+  profile_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -354,6 +413,102 @@ export interface Database {
           device_info?: Json;
           user_agent?: string | null;
           created_at?: string;
+        };
+      };
+      leave_requests: {
+        Row: {
+          id: string;
+          session_id: string;
+          athlete_id: string;
+          reason: string;
+          status: 'pending' | 'approved' | 'rejected';
+          requested_at: string;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          athlete_id: string;
+          reason: string;
+          status?: 'pending' | 'approved' | 'rejected';
+          requested_at?: string;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          session_id?: string;
+          athlete_id?: string;
+          reason?: string;
+          status?: 'pending' | 'approved' | 'rejected';
+          requested_at?: string;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          created_at?: string;
+        };
+      };
+      user_roles: {
+        Row: {
+          user_id: string;
+          role: UserRole;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          role?: UserRole;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          role?: UserRole;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      membership_applications: {
+        Row: {
+          id: string;
+          user_id: string;
+          club_id: string;
+          personal_info: Json;
+          documents: Json;
+          status: ApplicationStatus;
+          review_info: Json | null;
+          activity_log: Json;
+          profile_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          club_id: string;
+          personal_info: Json;
+          documents: Json;
+          status?: ApplicationStatus;
+          review_info?: Json | null;
+          activity_log?: Json;
+          profile_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          club_id?: string;
+          personal_info?: Json;
+          documents?: Json;
+          status?: ApplicationStatus;
+          review_info?: Json | null;
+          activity_log?: Json;
+          profile_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
         };
       };
     };

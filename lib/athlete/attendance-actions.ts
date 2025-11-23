@@ -4,35 +4,13 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { createAuditLog } from '@/lib/audit/actions';
 import { Database } from '@/types/database.types';
+import { invalidatePattern } from '@/lib/utils/cache';
 
 type TrainingSession = Database['public']['Tables']['training_sessions']['Row'];
 type AttendanceLog = Database['public']['Tables']['attendance']['Row'];
 type AttendanceLogInsert = Database['public']['Tables']['attendance']['Insert'];
-
-// Temporary type until database types are regenerated
-type LeaveRequest = {
-  id: string;
-  session_id: string;
-  athlete_id: string;
-  reason: string;
-  status: 'pending' | 'approved' | 'rejected';
-  requested_at: string;
-  reviewed_by: string | null;
-  reviewed_at: string | null;
-  created_at: string;
-};
-
-type LeaveRequestInsert = {
-  id?: string;
-  session_id: string;
-  athlete_id: string;
-  reason: string;
-  status?: 'pending' | 'approved' | 'rejected';
-  requested_at?: string;
-  reviewed_by?: string | null;
-  reviewed_at?: string | null;
-  created_at?: string;
-};
+type LeaveRequest = Database['public']['Tables']['leave_requests']['Row'];
+type LeaveRequestInsert = Database['public']['Tables']['leave_requests']['Insert'];
 
 interface SessionWithAttendance extends TrainingSession {
   attendance?: AttendanceLog | null;
@@ -51,11 +29,14 @@ interface AttendanceStats {
 /**
  * Get all training sessions for an athlete's club
  * Includes attendance status for each session
+ * OPTIMIZED: Added pagination support
  */
 export async function getAthleteSessions(filter?: {
   upcoming?: boolean;
   past?: boolean;
-}): Promise<{ data?: SessionWithAttendance[]; error?: string }> {
+  limit?: number;
+  offset?: number;
+}): Promise<{ data?: SessionWithAttendance[]; total?: number; error?: string }> {
   try {
     const supabase = await createClient();
 
@@ -80,15 +61,19 @@ export async function getAthleteSessions(filter?: {
       return { error: 'ไม่พบข้อมูลนักกีฬา' };
     }
 
-    // Build query for sessions
+    // Build query for sessions with pagination
+    const limit = filter?.limit || 100; // Default limit
+    const offset = filter?.offset || 0;
+
     // @ts-ignore
     let query = supabase
       .from('training_sessions')
-      .select('*')
+      .select('*', { count: 'exact' })
       // @ts-ignore
       .eq('club_id', athlete.club_id)
       .order('session_date', { ascending: true })
-      .order('start_time', { ascending: true });
+      .order('start_time', { ascending: true })
+      .range(offset, offset + limit - 1);
 
     // Apply filters
     const today = new Date().toISOString().split('T')[0];
@@ -99,7 +84,7 @@ export async function getAthleteSessions(filter?: {
       query = query.lt('session_date', today);
     }
 
-    const { data: sessions, error: sessionsError } = await query;
+    const { data: sessions, error: sessionsError, count } = await query;
 
     if (sessionsError) {
       console.error('Sessions query error:', sessionsError);
@@ -146,7 +131,7 @@ export async function getAthleteSessions(filter?: {
       };
     });
 
-    return { data: sessionsWithAttendance };
+    return { data: sessionsWithAttendance, total: count || 0 };
   } catch (error) {
     console.error('Unexpected error in getAthleteSessions:', error);
     return { error: 'เกิดข้อผิดพลาดที่ไม่คาดคิด' };
@@ -374,6 +359,10 @@ export async function athleteCheckIn(sessionId: string): Promise<{
 
     revalidatePath('/dashboard/athlete/schedule');
     revalidatePath('/dashboard/athlete/attendance');
+
+    // Invalidate stats cache
+    invalidatePattern('attendance-stats:.*');
+    invalidatePattern('club-stats:.*');
 
     return { success: true };
   } catch (error) {

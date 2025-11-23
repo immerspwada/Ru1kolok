@@ -13,8 +13,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/toast';
 import { requestLeave } from '@/lib/athlete/attendance-actions';
-import { AlertCircle, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import { AlertCircle, Clock, Loader2 } from 'lucide-react';
 
 interface LeaveRequestFormProps {
   sessionId: string;
@@ -33,7 +34,7 @@ interface LeaveRequestFormProps {
  * Reason textarea (min 10 characters)
  * Validate timing (at least 2 hours before session)
  * Call requestLeave action
- * Show submission status
+ * Show submission status with toast notifications
  * 
  * Requirements: BR2
  */
@@ -48,11 +49,10 @@ export function LeaveRequestForm({
   onError,
 }: LeaveRequestFormProps) {
   const router = useRouter();
+  const { addToast } = useToast();
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   /**
@@ -122,13 +122,17 @@ export function LeaveRequestForm({
    * Validates reason and timing before showing confirmation dialog
    */
   const handleSubmit = () => {
-    setError(null);
     setValidationError(null);
 
     // Validate reason
     const reasonValidation = validateReason(reason);
     if (!reasonValidation.valid) {
       setValidationError(reasonValidation.message || 'เหตุผลไม่ถูกต้อง');
+      addToast({
+        title: 'ข้อมูลไม่ถูกต้อง',
+        description: reasonValidation.message || 'เหตุผลไม่ถูกต้อง',
+        variant: 'error',
+      });
       if (onError) {
         onError(reasonValidation.message || 'เหตุผลไม่ถูกต้อง');
       }
@@ -138,7 +142,11 @@ export function LeaveRequestForm({
     // Validate timing
     const timingValidation = validateTiming();
     if (!timingValidation.valid) {
-      setError(timingValidation.message || 'ไม่สามารถแจ้งลาได้ในขณะนี้');
+      addToast({
+        title: 'ไม่สามารถแจ้งลาได้',
+        description: timingValidation.message || 'ไม่สามารถแจ้งลาได้ในขณะนี้',
+        variant: 'error',
+      });
       if (onError) {
         onError(timingValidation.message || 'ไม่สามารถแจ้งลาได้ในขณะนี้');
       }
@@ -155,7 +163,6 @@ export function LeaveRequestForm({
    */
   const handleConfirmLeaveRequest = async () => {
     setIsSubmitting(true);
-    setError(null);
     setShowConfirmDialog(false);
 
     try {
@@ -165,13 +172,21 @@ export function LeaveRequestForm({
       });
 
       if (result.error) {
-        setError(result.error);
+        addToast({
+          title: 'เกิดข้อผิดพลาด',
+          description: result.error,
+          variant: 'error',
+        });
         if (onError) {
           onError(result.error);
         }
       } else {
         // Success
-        setShowSuccessDialog(true);
+        addToast({
+          title: 'ส่งคำขอลาสำเร็จ!',
+          description: 'คำขอลาของคุณได้ถูกส่งไปยังโค้ชเรียบร้อยแล้ว',
+          variant: 'success',
+        });
         setReason(''); // Clear form
         if (onSuccess) {
           onSuccess();
@@ -179,11 +194,15 @@ export function LeaveRequestForm({
         // Refresh the page to show updated status
         setTimeout(() => {
           router.refresh();
-        }, 1500);
+        }, 1000);
       }
     } catch (err) {
-      const errorMessage = 'เกิดข้อผิดพลาดที่ไม่คาดคิด';
-      setError(errorMessage);
+      const errorMessage = 'เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองอีกครั้ง';
+      addToast({
+        title: 'เกิดข้อผิดพลาด',
+        description: errorMessage,
+        variant: 'error',
+      });
       if (onError) {
         onError(errorMessage);
       }
@@ -247,7 +266,7 @@ export function LeaveRequestForm({
             placeholder="กรุณาระบุเหตุผลในการลา (อย่างน้อย 10 ตัวอักษร)"
             rows={4}
             disabled={isDisabled}
-            className={validationError ? 'border-red-300 focus:border-red-500' : ''}
+            className={validationError && characterCount < 10 ? 'border-red-300 focus:border-red-500' : ''}
           />
           
           {/* Character Count */}
@@ -255,8 +274,11 @@ export function LeaveRequestForm({
             <span className={characterCount < 10 ? 'text-gray-500' : 'text-green-600'}>
               {characterCount} / 10 ตัวอักษรขั้นต่ำ
             </span>
-            {validationError && (
-              <span className="text-red-600">{validationError}</span>
+            {validationError && characterCount < 10 && (
+              <span className="text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {validationError}
+              </span>
             )}
           </div>
         </div>
@@ -280,16 +302,6 @@ export function LeaveRequestForm({
             </>
           )}
         </Button>
-
-        {/* Error Message */}
-        {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Confirmation Dialog */}
@@ -341,41 +353,14 @@ export function LeaveRequestForm({
               ยกเลิก
             </Button>
             <Button onClick={handleConfirmLeaveRequest} disabled={isSubmitting}>
-              {isSubmitting ? 'กำลังส่ง...' : 'ยืนยันการแจ้งลา'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Success Dialog */}
-      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-green-600">
-              <CheckCircle className="h-6 w-6" />
-              ส่งคำขอลาสำเร็จ
-            </DialogTitle>
-            <DialogDescription asChild>
-              <div>
-                <div className="text-gray-700 mt-2">
-                  คำขอลาของคุณได้ถูกส่งไปยังโค้ชเรียบร้อยแล้ว
-                </div>
-                {sessionTitle && (
-                  <div className="text-sm text-gray-600 mt-2">
-                    {sessionTitle}
-                  </div>
-                )}
-                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="text-sm text-blue-700">
-                    โค้ชจะพิจารณาคำขอของคุณและแจ้งผลกลับโดยเร็ว
-                  </div>
-                </div>
-              </div>
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => setShowSuccessDialog(false)}>
-              ปิด
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  กำลังส่ง...
+                </>
+              ) : (
+                'ยืนยันการแจ้งลา'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

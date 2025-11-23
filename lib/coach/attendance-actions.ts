@@ -4,11 +4,42 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { createAuditLog } from '@/lib/audit/actions';
 import { Database } from '@/types/database.types';
+import { invalidatePattern } from '@/lib/utils/cache';
 
 type AttendanceLog = Database['public']['Tables']['attendance']['Row'];
 type AttendanceLogInsert = Database['public']['Tables']['attendance']['Insert'];
 type AttendanceLogUpdate = Database['public']['Tables']['attendance']['Update'];
 type AttendanceStatus = Database['public']['Tables']['attendance']['Row']['status'];
+
+// Leave request types
+type LeaveRequest = {
+  id: string;
+  session_id: string;
+  athlete_id: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  requested_at: string;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+};
+
+interface LeaveRequestWithDetails extends LeaveRequest {
+  training_sessions?: {
+    id: string;
+    title: string;
+    session_date: string;
+    start_time: string;
+    end_time: string;
+    location: string;
+  };
+  athletes?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    nickname: string | null;
+  };
+}
 
 interface AthleteWithAttendance {
   id: string;
@@ -21,6 +52,7 @@ interface AthleteWithAttendance {
 /**
  * Get attendance list for a training session
  * Returns all athletes in the club with their attendance status
+ * OPTIMIZED: Uses LEFT JOIN to fetch athletes and attendance in a single query
  */
 export async function getSessionAttendance(sessionId: string): Promise<{
   data?: AthleteWithAttendance[];
@@ -67,13 +99,29 @@ export async function getSessionAttendance(sessionId: string): Promise<{
       return { error: 'ไม่ได้รับอนุญาต: คุณไม่สามารถดูตารางของโค้ชอื่นได้' };
     }
 
-    // Get all athletes in the club
+    // OPTIMIZED: Single query with LEFT JOIN to get athletes and their attendance
+    // This eliminates the N+1 query problem
     // @ts-ignore
-    const { data: athletes, error: athletesError } = await supabase
+    const { data: athletesData, error: athletesError } = await supabase
       .from('athletes')
-      .select('id, first_name, last_name, nickname')
+      .select(`
+        id,
+        first_name,
+        last_name,
+        nickname,
+        attendance!left (
+          id,
+          status,
+          check_in_time,
+          check_in_method,
+          notes,
+          created_at,
+          updated_at
+        )
+      `)
       // @ts-ignore
       .eq('club_id', coach.club_id)
+      .eq('attendance.training_session_id', sessionId)
       .order('first_name', { ascending: true });
 
     if (athletesError) {
@@ -81,25 +129,23 @@ export async function getSessionAttendance(sessionId: string): Promise<{
       return { error: 'เกิดข้อผิดพลาดในการดึงข้อมูลนักกีฬา' };
     }
 
-    // Get attendance logs for this session
-    const { data: attendanceLogs, error: logsError } = await supabase
-      .from('attendance')
-      .select('*')
-      .eq('training_session_id', sessionId);
-
-    if (logsError) {
-      console.error('Attendance logs query error:', logsError);
-      return { error: 'เกิดข้อผิดพลาดในการดึงข้อมูลการเข้าร่วม' };
-    }
-
-    // Combine athletes with their attendance
+    // Transform the data to match the expected format
     // @ts-ignore
-    const athletesWithAttendance: AthleteWithAttendance[] = athletes.map((athlete) => {
+    const athletesWithAttendance: AthleteWithAttendance[] = (athletesData || []).map((athlete) => {
       // @ts-ignore
-      const attendance = attendanceLogs?.find((log) => log.athlete_id === athlete.id);
+      const attendanceArray = athlete.attendance || [];
+      // @ts-ignore
+      const attendance = attendanceArray.length > 0 ? attendanceArray[0] : undefined;
+      
       return {
         // @ts-ignore
-        ...athlete,
+        id: athlete.id,
+        // @ts-ignore
+        first_name: athlete.first_name,
+        // @ts-ignore
+        last_name: athlete.last_name,
+        // @ts-ignore
+        nickname: athlete.nickname,
         attendance,
       };
     });
@@ -259,6 +305,10 @@ export async function markAttendance(data: {
 
     revalidatePath(`/dashboard/coach/attendance/${data.sessionId}`);
     revalidatePath('/dashboard/coach/sessions');
+
+    // Invalidate stats cache
+    invalidatePattern('attendance-stats:.*');
+    invalidatePattern('club-stats:.*');
 
     return { success: true };
   } catch (error) {
@@ -547,3 +597,83 @@ export async function updateAttendance(
     return { error: 'เกิดข้อผิดพลาดที่ไม่คาดคิด' };
   }
 }
+
+/**
+ * Get all leave requests for coach's sessions
+ * Returns leave requests with athlete and session details
+ */
+export async function getCoachLeaveRequests(filter?: {
+  status?: 'pending' | 'approved' | 'rejected' | 'all';
+}): Promise<{
+  data?: LeaveRequestWithDetails[];
+  error?: string;
+}> {
+  try {
+    const supabase = await createClient();
+
+    // Get current user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { error: 'ไม่ได้รับอนุญาต: กรุณาเข้าสู่ระบบ' };
+    }
+
+    // Get coach profile
+    const { data: coach, error: coachError } = await supabase
+      .from('coaches')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (coachError || !coach) {
+      return { error: 'ไม่พบข้อมูลโค้ช' };
+    }
+
+    // Build query for leave requests
+    let query = supabase
+      .from('leave_requests')
+      .select(`
+        *,
+        training_sessions!inner (
+          id,
+          title,
+          session_date,
+          start_time,
+          end_time,
+          location
+        ),
+        athletes!inner (
+          id,
+          first_name,
+          last_name,
+          nickname
+        )
+      `)
+      // @ts-ignore
+      .eq('training_sessions.coach_id', user.id)
+      .order('requested_at', { ascending: false });
+
+    // Apply status filter
+    if (filter?.status && filter.status !== 'all') {
+      query = query.eq('status', filter.status);
+    }
+
+    const { data: leaveRequests, error: queryError } = await query;
+
+    if (queryError) {
+      console.error('Leave requests query error:', queryError);
+      return { error: 'เกิดข้อผิดพลาดในการดึงข้อมูลคำขอลา' };
+    }
+
+    // @ts-ignore
+    return { data: leaveRequests || [] };
+  } catch (error) {
+    console.error('Unexpected error in getCoachLeaveRequests:', error);
+    return { error: 'เกิดข้อผิดพลาดที่ไม่คาดคิด' };
+  }
+}
+
+// Duplicate function removed - already exists earlier in file

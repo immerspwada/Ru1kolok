@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Spinner } from '@/components/ui/spinner';
+import { useToast } from '@/components/ui/toast';
 import { createSession } from '@/lib/coach/session-actions';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 
 interface SessionFormProps {
   onSuccess?: () => void;
@@ -17,9 +17,9 @@ interface SessionFormProps {
 
 export function SessionForm({ onSuccess, onCancel }: SessionFormProps) {
   const router = useRouter();
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -29,57 +29,64 @@ export function SessionForm({ onSuccess, onCancel }: SessionFormProps) {
     location: '',
   });
 
-  // Client-side validation
-  const validateForm = (): string | null => {
+  // Client-side validation with field-specific errors
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
     // Check required fields
     if (!formData.title.trim()) {
-      return 'กรุณากรอกชื่อตารางฝึกซ้อม';
+      errors.title = 'กรุณากรอกชื่อตารางฝึกซ้อม';
     }
 
     if (!formData.session_date) {
-      return 'กรุณาเลือกวันที่';
+      errors.session_date = 'กรุณาเลือกวันที่';
     }
 
     if (!formData.start_time) {
-      return 'กรุณาเลือกเวลาเริ่ม';
+      errors.start_time = 'กรุณาเลือกเวลาเริ่ม';
     }
 
     if (!formData.end_time) {
-      return 'กรุณาเลือกเวลาสิ้นสุด';
+      errors.end_time = 'กรุณาเลือกเวลาสิ้นสุด';
     }
 
     if (!formData.location.trim()) {
-      return 'กรุณากรอกสถานที่';
+      errors.location = 'กรุณากรอกสถานที่';
     }
 
     // Validate date is not in the past
-    const sessionDate = new Date(formData.session_date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    if (sessionDate < today) {
-      return 'ไม่สามารถสร้างตารางในอดีตได้';
+    if (formData.session_date) {
+      const sessionDate = new Date(formData.session_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (sessionDate < today) {
+        errors.session_date = 'ไม่สามารถสร้างตารางในอดีตได้';
+      }
     }
 
     // Validate start_time < end_time
-    if (formData.start_time >= formData.end_time) {
-      return 'เวลาเริ่มต้องน้อยกว่าเวลาสิ้นสุด';
+    if (formData.start_time && formData.end_time && formData.start_time >= formData.end_time) {
+      errors.end_time = 'เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม';
     }
 
-    return null;
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
-    setSuccess(false);
+    setFieldErrors({});
 
     // Client-side validation
-    const validationError = validateForm();
-    if (validationError) {
-      setError(validationError);
+    if (!validateForm()) {
       setLoading(false);
+      addToast({
+        title: 'ข้อมูลไม่ถูกต้อง',
+        description: 'กรุณาตรวจสอบข้อมูลที่กรอกและลองอีกครั้ง',
+        variant: 'error',
+      });
       return;
     }
 
@@ -94,7 +101,12 @@ export function SessionForm({ onSuccess, onCancel }: SessionFormProps) {
     });
 
     if (result.success) {
-      setSuccess(true);
+      addToast({
+        title: 'สำเร็จ!',
+        description: 'สร้างตารางฝึกซ้อมเรียบร้อยแล้ว',
+        variant: 'success',
+      });
+      
       setFormData({
         title: '',
         description: '',
@@ -112,10 +124,24 @@ export function SessionForm({ onSuccess, onCancel }: SessionFormProps) {
         router.refresh();
       }
     } else {
-      setError(result.error || 'เกิดข้อผิดพลาดในการสร้างตารางฝึกซ้อม');
+      addToast({
+        title: 'เกิดข้อผิดพลาด',
+        description: result.error || 'ไม่สามารถสร้างตารางฝึกซ้อมได้',
+        variant: 'error',
+      });
     }
 
     setLoading(false);
+  };
+
+  const clearFieldError = (field: string) => {
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   };
 
   return (
@@ -128,11 +154,21 @@ export function SessionForm({ onSuccess, onCancel }: SessionFormProps) {
         <Input
           id="title"
           value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          onChange={(e) => {
+            setFormData({ ...formData, title: e.target.value });
+            clearFieldError('title');
+          }}
           placeholder="เช่น ฝึกซ้อมประจำวัน, ฝึกซ้อมพิเศษ"
           required
           disabled={loading}
+          className={fieldErrors.title ? 'border-red-300 focus:border-red-500' : ''}
         />
+        {fieldErrors.title && (
+          <div className="flex items-center gap-1 text-sm text-red-600">
+            <AlertCircle className="h-4 w-4" />
+            <span>{fieldErrors.title}</span>
+          </div>
+        )}
       </div>
 
       {/* Description */}
@@ -157,11 +193,21 @@ export function SessionForm({ onSuccess, onCancel }: SessionFormProps) {
           id="session_date"
           type="date"
           value={formData.session_date}
-          onChange={(e) => setFormData({ ...formData, session_date: e.target.value })}
+          onChange={(e) => {
+            setFormData({ ...formData, session_date: e.target.value });
+            clearFieldError('session_date');
+          }}
           required
           disabled={loading}
           min={new Date().toISOString().split('T')[0]}
+          className={fieldErrors.session_date ? 'border-red-300 focus:border-red-500' : ''}
         />
+        {fieldErrors.session_date && (
+          <div className="flex items-center gap-1 text-sm text-red-600">
+            <AlertCircle className="h-4 w-4" />
+            <span>{fieldErrors.session_date}</span>
+          </div>
+        )}
       </div>
 
       {/* Time Range */}
@@ -174,10 +220,20 @@ export function SessionForm({ onSuccess, onCancel }: SessionFormProps) {
             id="start_time"
             type="time"
             value={formData.start_time}
-            onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+            onChange={(e) => {
+              setFormData({ ...formData, start_time: e.target.value });
+              clearFieldError('start_time');
+            }}
             required
             disabled={loading}
+            className={fieldErrors.start_time ? 'border-red-300 focus:border-red-500' : ''}
           />
+          {fieldErrors.start_time && (
+            <div className="flex items-center gap-1 text-sm text-red-600">
+              <AlertCircle className="h-4 w-4" />
+              <span>{fieldErrors.start_time}</span>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -188,10 +244,20 @@ export function SessionForm({ onSuccess, onCancel }: SessionFormProps) {
             id="end_time"
             type="time"
             value={formData.end_time}
-            onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+            onChange={(e) => {
+              setFormData({ ...formData, end_time: e.target.value });
+              clearFieldError('end_time');
+            }}
             required
             disabled={loading}
+            className={fieldErrors.end_time ? 'border-red-300 focus:border-red-500' : ''}
           />
+          {fieldErrors.end_time && (
+            <div className="flex items-center gap-1 text-sm text-red-600">
+              <AlertCircle className="h-4 w-4" />
+              <span>{fieldErrors.end_time}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -203,26 +269,22 @@ export function SessionForm({ onSuccess, onCancel }: SessionFormProps) {
         <Input
           id="location"
           value={formData.location}
-          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+          onChange={(e) => {
+            setFormData({ ...formData, location: e.target.value });
+            clearFieldError('location');
+          }}
           placeholder="เช่น สนามฟุตบอล A, ห้องฟิตเนส"
           required
           disabled={loading}
+          className={fieldErrors.location ? 'border-red-300 focus:border-red-500' : ''}
         />
+        {fieldErrors.location && (
+          <div className="flex items-center gap-1 text-sm text-red-600">
+            <AlertCircle className="h-4 w-4" />
+            <span>{fieldErrors.location}</span>
+          </div>
+        )}
       </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="rounded-md bg-red-50 p-3 border border-red-200">
-          <p className="text-sm text-red-600">{error}</p>
-        </div>
-      )}
-
-      {/* Success Message */}
-      {success && (
-        <div className="rounded-md bg-green-50 p-3 border border-green-200">
-          <p className="text-sm text-green-600">สร้างตารางฝึกซ้อมสำเร็จ!</p>
-        </div>
-      )}
 
       {/* Form Actions */}
       <div className="flex justify-end gap-2 pt-4">

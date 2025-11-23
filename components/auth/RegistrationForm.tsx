@@ -70,7 +70,7 @@ export function RegistrationForm({ clubs }: RegistrationFormProps) {
     }
 
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = 'รหัสผ่านไม่ตรงกัน';
     }
 
     setErrors(newErrors);
@@ -80,14 +80,14 @@ export function RegistrationForm({ clubs }: RegistrationFormProps) {
   const validateStep2 = () => {
     const newErrors: Record<string, string> = {};
 
-    const firstNameValidation = validateRequired(formData.firstName, 'First name');
+    const firstNameValidation = validateRequired(formData.firstName, 'ชื่อ');
     if (!firstNameValidation.isValid) {
-      newErrors.firstName = firstNameValidation.errors[0];
+      newErrors.firstName = 'กรุณากรอกชื่อ';
     }
 
-    const lastNameValidation = validateRequired(formData.lastName, 'Last name');
+    const lastNameValidation = validateRequired(formData.lastName, 'นามสกุล');
     if (!lastNameValidation.isValid) {
-      newErrors.lastName = lastNameValidation.errors[0];
+      newErrors.lastName = 'กรุณากรอกนามสกุล';
     }
 
     const dobValidation = validateDateOfBirth(formData.dateOfBirth);
@@ -101,11 +101,11 @@ export function RegistrationForm({ clubs }: RegistrationFormProps) {
     }
 
     if (!formData.gender) {
-      newErrors.gender = 'Gender is required';
+      newErrors.gender = 'กรุณาเลือกเพศ';
     }
 
     if (!formData.clubId) {
-      newErrors.clubId = 'Club selection is required';
+      newErrors.clubId = 'กรุณาเลือกกีฬา';
     }
 
     setErrors(newErrors);
@@ -138,7 +138,7 @@ export function RegistrationForm({ clubs }: RegistrationFormProps) {
       const result = await signUp(formData.email, formData.password);
 
       if (!result.success) {
-        setError(result.error || 'Registration failed');
+        setError(result.error || 'การสมัครสมาชิกล้มเหลว');
         setLoading(false);
         return;
       }
@@ -146,7 +146,7 @@ export function RegistrationForm({ clubs }: RegistrationFormProps) {
       // Redirect to OTP verification
       router.push(`/auth/verify-otp?email=${encodeURIComponent(formData.email)}`);
     } catch {
-      setError('An unexpected error occurred');
+      setError('เกิดข้อผิดพลาดที่ไม่คาดคิด');
       setLoading(false);
     }
   };
@@ -154,9 +154,9 @@ export function RegistrationForm({ clubs }: RegistrationFormProps) {
   return (
     <Card className="w-full max-w-2xl">
       <CardHeader>
-        <CardTitle>Athlete Registration</CardTitle>
+        <CardTitle>สมัครสมาชิกนักกีฬา</CardTitle>
         <CardDescription>
-          Step {step} of 2: {step === 1 ? 'Account Information' : 'Personal Information'}
+          ขั้นตอนที่ {step} จาก 2: {step === 1 ? 'ข้อมูลบัญชี' : 'ข้อมูลส่วนตัว'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -164,7 +164,7 @@ export function RegistrationForm({ clubs }: RegistrationFormProps) {
           {step === 1 && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">อีเมล</Label>
                 <Input
                   id="email"
                   type="email"
@@ -177,7 +177,7 @@ export function RegistrationForm({ clubs }: RegistrationFormProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">รหัสผ่าน</Label>
                 <Input
                   id="password"
                   type="password"
@@ -190,7 +190,7 @@ export function RegistrationForm({ clubs }: RegistrationFormProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Label htmlFor="confirmPassword">ยืนยันรหัสผ่าน</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -205,7 +205,7 @@ export function RegistrationForm({ clubs }: RegistrationFormProps) {
               </div>
 
               <Button type="button" onClick={handleNext} className="w-full">
-                Next
+                ถัดไป
               </Button>
             </>
           )}
@@ -214,24 +214,24 @@ export function RegistrationForm({ clubs }: RegistrationFormProps) {
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
+                  <Label htmlFor="firstName">ชื่อ</Label>
                   <Input
                     id="firstName"
                     value={formData.firstName}
                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    placeholder="John"
+                    placeholder="สมชาย"
                     required
                   />
                   {errors.firstName && <p className="text-sm text-red-600">{errors.firstName}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
+                  <Label htmlFor="lastName">นามสกุล</Label>
                   <Input
                     id="lastName"
                     value={formData.lastName}
                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    placeholder="Doe"
+                    placeholder="ใจดี"
                     required
                   />
                   {errors.lastName && <p className="text-sm text-red-600">{errors.lastName}</p>}
@@ -239,18 +239,18 @@ export function RegistrationForm({ clubs }: RegistrationFormProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nickname">Nickname (Optional)</Label>
+                <Label htmlFor="nickname">ชื่อเล่น (ไม่บังคับ)</Label>
                 <Input
                   id="nickname"
                   value={formData.nickname}
                   onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
-                  placeholder="Johnny"
+                  placeholder="ชาย"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                  <Label htmlFor="dateOfBirth">วันเกิด</Label>
                   <Input
                     id="dateOfBirth"
                     type="date"
@@ -264,15 +264,15 @@ export function RegistrationForm({ clubs }: RegistrationFormProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="gender">Gender</Label>
+                  <Label htmlFor="gender">เพศ</Label>
                   <Select value={formData.gender} onValueChange={(value) => setFormData({ ...formData, gender: value })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select gender" />
+                      <SelectValue placeholder="เลือกเพศ" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="male">ชาย</SelectItem>
+                      <SelectItem value="female">หญิง</SelectItem>
+                      <SelectItem value="other">อื่นๆ</SelectItem>
                     </SelectContent>
                   </Select>
                   {errors.gender && <p className="text-sm text-red-600">{errors.gender}</p>}
@@ -280,13 +280,13 @@ export function RegistrationForm({ clubs }: RegistrationFormProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Phone Number</Label>
+                <Label htmlFor="phoneNumber">เบอร์โทรศัพท์</Label>
                 <Input
                   id="phoneNumber"
                   type="tel"
                   value={formData.phoneNumber}
                   onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                  placeholder="+66 12 345 6789"
+                  placeholder="081-234-5678"
                   required
                 />
                 {errors.phoneNumber && (
@@ -295,10 +295,10 @@ export function RegistrationForm({ clubs }: RegistrationFormProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="clubId">Select Club</Label>
+                <Label htmlFor="clubId">เลือกกีฬา</Label>
                 <Select value={formData.clubId} onValueChange={(value) => setFormData({ ...formData, clubId: value })}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose your club" />
+                    <SelectValue placeholder="เลือกกีฬาที่ต้องการสมัคร" />
                   </SelectTrigger>
                   <SelectContent>
                     {clubs.map((club) => (
@@ -312,12 +312,12 @@ export function RegistrationForm({ clubs }: RegistrationFormProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="healthNotes">Health Notes (Optional)</Label>
+                <Label htmlFor="healthNotes">ข้อมูลสุขภาพ (ไม่บังคับ)</Label>
                 <Input
                   id="healthNotes"
                   value={formData.healthNotes}
                   onChange={(e) => setFormData({ ...formData, healthNotes: e.target.value })}
-                  placeholder="Any health conditions or allergies..."
+                  placeholder="โรคประจำตัว หรือ อาการแพ้..."
                 />
               </div>
 
@@ -329,10 +329,10 @@ export function RegistrationForm({ clubs }: RegistrationFormProps) {
 
               <div className="flex gap-4">
                 <Button type="button" variant="outline" onClick={handleBack} className="flex-1">
-                  Back
+                  ย้อนกลับ
                 </Button>
                 <Button type="submit" disabled={loading} className="flex-1">
-                  {loading ? 'Creating Account...' : 'Create Account'}
+                  {loading ? 'กำลังสร้างบัญชี...' : 'สร้างบัญชี'}
                 </Button>
               </div>
             </>
@@ -340,9 +340,9 @@ export function RegistrationForm({ clubs }: RegistrationFormProps) {
         </form>
 
         <div className="mt-6 text-center text-sm">
-          Already have an account?{' '}
+          มีบัญชีอยู่แล้ว?{' '}
           <a href="/login" className="font-medium text-blue-600 hover:text-blue-500">
-            Sign in
+            เข้าสู่ระบบ
           </a>
         </div>
       </CardContent>

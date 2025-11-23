@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { Users, Calendar, TrendingUp, ClipboardList } from 'lucide-react';
+import { Users, Calendar, TrendingUp, ClipboardList, FileText } from 'lucide-react';
 import Link from 'next/link';
 
 interface CoachProfile {
@@ -191,7 +191,18 @@ export default async function CoachDashboard() {
         {/* Quick Actions */}
         <div className="mb-8">
           <h2 className="mb-4 text-xl font-semibold text-gray-900">เมนูด่วน</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            <Link
+              href="/dashboard/coach/applications"
+              className="rounded-lg bg-white p-6 shadow transition-shadow hover:shadow-md"
+            >
+              <FileText className="mb-3 h-8 w-8 text-indigo-600" />
+              <h3 className="font-semibold text-gray-900">ใบสมัครสมาชิก</h3>
+              <p className="mt-1 text-sm text-gray-600">
+                พิจารณาใบสมัครเข้าร่วมกีฬา
+              </p>
+            </Link>
+
             <Link
               href="/dashboard/coach/athletes"
               className="rounded-lg bg-white p-6 shadow transition-shadow hover:shadow-md"

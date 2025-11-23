@@ -45,7 +45,7 @@ export function OTPVerification() {
 
       setSuccess(true);
       setTimeout(() => {
-        router.push('/login?verified=true');
+        router.push('/register-membership');
       }, 2000);
     } catch {
       setError('An unexpected error occurred');
@@ -80,12 +80,12 @@ export function OTPVerification() {
     return (
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Email Verified!</CardTitle>
-          <CardDescription>Your email has been successfully verified.</CardDescription>
+          <CardTitle>ยืนยันอีเมลสำเร็จ! ✅</CardTitle>
+          <CardDescription>อีเมลของคุณได้รับการยืนยันแล้ว</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-md bg-green-50 p-4">
-            <p className="text-sm text-green-600">Redirecting to login page...</p>
+            <p className="text-sm text-green-600">กำลังนำคุณไปยังหน้าสมัครสมาชิกกีฬา...</p>
           </div>
         </CardContent>
       </Card>
@@ -95,15 +95,15 @@ export function OTPVerification() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Verify Your Email</CardTitle>
+        <CardTitle>ยืนยันอีเมล</CardTitle>
         <CardDescription>
-          We&apos;ve sent a 6-digit code to <strong>{email}</strong>
+          เราได้ส่งรหัส 6 หลักไปยัง <strong>{email}</strong>
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="otp">Verification Code</Label>
+            <Label htmlFor="otp">รหัสยืนยัน</Label>
             <Input
               id="otp"
               type="text"
@@ -114,7 +114,7 @@ export function OTPVerification() {
               className="text-center text-2xl tracking-widest"
               required
             />
-            <p className="text-sm text-gray-500">Enter the 6-digit code from your email</p>
+            <p className="text-sm text-gray-500">กรอกรหัส 6 หลักจากอีเมลของคุณ</p>
           </div>
 
           {error && (
@@ -125,24 +125,24 @@ export function OTPVerification() {
 
           {resendSuccess && (
             <div className="rounded-md bg-green-50 p-4">
-              <p className="text-sm text-green-600">New code sent to your email!</p>
+              <p className="text-sm text-green-600">ส่งรหัสใหม่ไปยังอีเมลของคุณแล้ว!</p>
             </div>
           )}
 
           <Button type="submit" disabled={loading || otp.length !== 6} className="w-full">
-            {loading ? 'Verifying...' : 'Verify Email'}
+            {loading ? 'กำลังยืนยัน...' : 'ยืนยันอีเมล'}
           </Button>
 
           <div className="text-center">
             <p className="text-sm text-gray-600">
-              Didn&apos;t receive the code?{' '}
+              ไม่ได้รับรหัส?{' '}
               <button
                 type="button"
                 onClick={handleResend}
                 disabled={resending}
                 className="font-medium text-blue-600 hover:text-blue-500 disabled:opacity-50"
               >
-                {resending ? 'Sending...' : 'Resend'}
+                {resending ? 'กำลังส่ง...' : 'ส่งอีกครั้ง'}
               </button>
             </p>
           </div>

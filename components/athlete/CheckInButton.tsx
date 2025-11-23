@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/toast';
 import { athleteCheckIn } from '@/lib/athlete/attendance-actions';
 import { CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
 
@@ -31,7 +32,7 @@ interface CheckInButtonProps {
  * Validates check-in time window (30 min before - 15 min after)
  * Shows confirmation dialog
  * Calls athleteCheckIn action
- * Displays success/error messages
+ * Displays success/error toast notifications
  * Updates UI state after check-in
  * 
  * Requirements: AC2, BR1
@@ -47,10 +48,9 @@ export function CheckInButton({
   onError,
 }: CheckInButtonProps) {
   const router = useRouter();
+  const { addToast } = useToast();
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   /**
    * Validate check-in time window
@@ -138,12 +138,14 @@ export function CheckInButton({
    * Shows confirmation dialog if time window is valid
    */
   const handleCheckInClick = () => {
-    setError(null);
-
     const validation = validateCheckInWindow();
 
     if (!validation.valid) {
-      setError(validation.message || 'ไม่สามารถเช็คอินได้ในขณะนี้');
+      addToast({
+        title: 'ไม่สามารถเช็คอินได้',
+        description: validation.message || 'ไม่สามารถเช็คอินได้ในขณะนี้',
+        variant: 'error',
+      });
       if (onError) {
         onError(validation.message || 'ไม่สามารถเช็คอินได้ในขณะนี้');
       }
@@ -159,31 +161,42 @@ export function CheckInButton({
    */
   const handleConfirmCheckIn = async () => {
     setIsCheckingIn(true);
-    setError(null);
     setShowConfirmDialog(false);
 
     try {
       const result = await athleteCheckIn(sessionId);
 
       if (result.error) {
-        setError(result.error);
+        addToast({
+          title: 'เกิดข้อผิดพลาด',
+          description: result.error,
+          variant: 'error',
+        });
         if (onError) {
           onError(result.error);
         }
       } else {
         // Success
-        setShowSuccessDialog(true);
+        addToast({
+          title: 'เช็คอินสำเร็จ!',
+          description: 'คุณได้เช็คอินเข้าร่วมการฝึกซ้อมเรียบร้อยแล้ว',
+          variant: 'success',
+        });
         if (onSuccess) {
           onSuccess();
         }
         // Refresh the page to show updated status
         setTimeout(() => {
           router.refresh();
-        }, 1500);
+        }, 1000);
       }
     } catch (err) {
-      const errorMessage = 'เกิดข้อผิดพลาดที่ไม่คาดคิด';
-      setError(errorMessage);
+      const errorMessage = 'เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองอีกครั้ง';
+      addToast({
+        title: 'เกิดข้อผิดพลาด',
+        description: errorMessage,
+        variant: 'error',
+      });
       if (onError) {
         onError(errorMessage);
       }
@@ -224,16 +237,6 @@ export function CheckInButton({
           <TimeIcon className="h-4 w-4" />
           <span>{timeStatus.message}</span>
         </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Confirmation Dialog */}
@@ -291,35 +294,6 @@ export function CheckInButton({
               ) : (
                 'ยืนยัน'
               )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Success Dialog */}
-      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-green-600">
-              <CheckCircle className="h-6 w-6" />
-              เช็คอินสำเร็จ
-            </DialogTitle>
-            <DialogDescription asChild>
-              <div>
-                <div className="text-gray-700 mt-2">
-                  คุณได้เช็คอินเข้าร่วมการฝึกซ้อมเรียบร้อยแล้ว
-                </div>
-                {sessionTitle && (
-                  <div className="text-sm text-gray-600 mt-2">
-                    {sessionTitle}
-                  </div>
-                )}
-              </div>
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => setShowSuccessDialog(false)}>
-              ปิด
             </Button>
           </DialogFooter>
         </DialogContent>
