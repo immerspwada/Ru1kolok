@@ -231,7 +231,7 @@ export function CoachActivityList({ activities }: { activities: Activity[] }) {
 
       {showRegistrations && (
         <RegistrationManagement
-          activity={activities.find(a => a.id === showRegistrations)!}
+          activity={activities.find(a => a.id === showRegistrations) as any}
           onClose={() => {
             setShowRegistrations(null);
             router.refresh();

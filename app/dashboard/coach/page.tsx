@@ -191,6 +191,21 @@ export default async function CoachDashboard() {
             </h2>
             <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
               <Link
+                href="/dashboard/coach/announcements"
+                className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
+                    <Bell className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-black">ประกาศแจ้งเตือน</p>
+                    <p className="text-xs text-gray-500">สร้างและจัดการประกาศ</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </Link>
+              <Link
                 href="/dashboard/coach/applications"
                 className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
               >
