@@ -1,6 +1,18 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { Users, Calendar, TrendingUp, ClipboardList, FileText } from 'lucide-react';
+import { 
+  Users, 
+  Calendar, 
+  TrendingUp, 
+  ClipboardList, 
+  FileText,
+  Activity,
+  BarChart3,
+  UserCheck,
+  Settings,
+  Bell,
+  ChevronRight
+} from 'lucide-react';
 import Link from 'next/link';
 
 interface CoachProfile {
@@ -105,178 +117,197 @@ export default async function CoachDashboard() {
     .eq('coach_id', profile.id);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-green-600 to-emerald-700 text-white p-6 shadow-lg">
-        <div className="mx-auto max-w-7xl">
+    <div className="min-h-screen bg-black">
+      {/* Native App Header - Black & White */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="px-4 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">
-                สวัสดี, โค้ช {profile.first_name}!
-              </h1>
-              <p className="text-green-100 text-sm mt-1">
-                {profile.clubs?.name || 'โค้ช'}
-                {profile.specialization && ` • ${profile.specialization}`}
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
+                <span className="text-white font-bold text-lg">
+                  {profile.first_name.charAt(0)}
+                </span>
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-black">
+                  {profile.first_name} {profile.last_name}
+                </h1>
+                <p className="text-xs text-gray-500">
+                  {profile.clubs?.name || 'โค้ช'}
+                </p>
+              </div>
             </div>
-            <Link
-              href="/logout"
-              className="rounded-lg p-3 hover:bg-white/10 transition-colors"
-              title="ออกจากระบบ"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            <div className="flex items-center gap-2">
+              <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <Bell className="h-5 w-5 text-black" />
+              </button>
+              <Link
+                href="/logout"
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                />
-              </svg>
-            </Link>
+                <Settings className="h-5 w-5 text-black" />
+              </Link>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl p-6">
-        {/* Statistics Cards */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
-          <div className="rounded-lg bg-white p-6 shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">นักกีฬาในสโมสร</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900">
-                  {totalAthletes || 0}
-                </p>
+      {/* Main Content */}
+      <div className="bg-gray-50 min-h-screen">
+        {/* Stats Overview - Compact Cards */}
+        <div className="bg-white px-4 py-6 border-b border-gray-200">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center">
+              <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-black flex items-center justify-center">
+                <Users className="h-6 w-6 text-white" />
               </div>
-              <div className="rounded-full bg-blue-100 p-3">
-                <Users className="h-6 w-6 text-blue-600" />
-              </div>
+              <p className="text-2xl font-bold text-black">{totalAthletes || 0}</p>
+              <p className="text-xs text-gray-500 mt-1">นักกีฬา</p>
             </div>
-          </div>
-
-          <div className="rounded-lg bg-white p-6 shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">การฝึกซ้อมทั้งหมด</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900">
-                  {totalSessions || 0}
-                </p>
+            <div className="text-center">
+              <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-black flex items-center justify-center">
+                <Calendar className="h-6 w-6 text-white" />
               </div>
-              <div className="rounded-full bg-green-100 p-3">
-                <Calendar className="h-6 w-6 text-green-600" />
-              </div>
+              <p className="text-2xl font-bold text-black">{totalSessions || 0}</p>
+              <p className="text-xs text-gray-500 mt-1">การฝึกซ้อม</p>
             </div>
-          </div>
-
-          <div className="rounded-lg bg-white p-6 shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">บันทึกผลการทดสอบ</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900">
-                  {totalPerformanceRecords || 0}
-                </p>
+            <div className="text-center">
+              <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-black flex items-center justify-center">
+                <TrendingUp className="h-6 w-6 text-white" />
               </div>
-              <div className="rounded-full bg-purple-100 p-3">
-                <TrendingUp className="h-6 w-6 text-purple-600" />
-              </div>
+              <p className="text-2xl font-bold text-black">{totalPerformanceRecords || 0}</p>
+              <p className="text-xs text-gray-500 mt-1">ผลทดสอบ</p>
             </div>
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="mb-8">
-          <h2 className="mb-4 text-xl font-semibold text-gray-900">เมนูด่วน</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            <Link
-              href="/dashboard/coach/applications"
-              className="rounded-lg bg-white p-6 shadow transition-shadow hover:shadow-md"
-            >
-              <FileText className="mb-3 h-8 w-8 text-indigo-600" />
-              <h3 className="font-semibold text-gray-900">ใบสมัครสมาชิก</h3>
-              <p className="mt-1 text-sm text-gray-600">
-                พิจารณาใบสมัครเข้าร่วมกีฬา
-              </p>
-            </Link>
-
-            <Link
-              href="/dashboard/coach/athletes"
-              className="rounded-lg bg-white p-6 shadow transition-shadow hover:shadow-md"
-            >
-              <Users className="mb-3 h-8 w-8 text-blue-600" />
-              <h3 className="font-semibold text-gray-900">จัดการนักกีฬา</h3>
-              <p className="mt-1 text-sm text-gray-600">
-                ดูและจัดการข้อมูลนักกีฬา
-              </p>
-            </Link>
-
-            <Link
-              href="/dashboard/coach/sessions"
-              className="rounded-lg bg-white p-6 shadow transition-shadow hover:shadow-md"
-            >
-              <Calendar className="mb-3 h-8 w-8 text-green-600" />
-              <h3 className="font-semibold text-gray-900">ตารางฝึกซ้อม</h3>
-              <p className="mt-1 text-sm text-gray-600">
-                สร้างและจัดการตารางฝึกซ้อม
-              </p>
-            </Link>
-
-            <Link
-              href="/dashboard/coach/attendance"
-              className="rounded-lg bg-white p-6 shadow transition-shadow hover:shadow-md"
-            >
-              <ClipboardList className="mb-3 h-8 w-8 text-orange-600" />
-              <h3 className="font-semibold text-gray-900">เช็คชื่อ</h3>
-              <p className="mt-1 text-sm text-gray-600">
-                บันทึกการเข้าร่วมฝึกซ้อม
-              </p>
-            </Link>
-
-            <Link
-              href="/dashboard/coach/performance"
-              className="rounded-lg bg-white p-6 shadow transition-shadow hover:shadow-md"
-            >
-              <TrendingUp className="mb-3 h-8 w-8 text-purple-600" />
-              <h3 className="font-semibold text-gray-900">บันทึกผลการทดสอบ</h3>
-              <p className="mt-1 text-sm text-gray-600">
-                บันทึกและติดตามผลการทดสอบ
-              </p>
-            </Link>
+        {/* Category Sections */}
+        <div className="px-4 py-6 space-y-6">
+          {/* การจัดการสมาชิก */}
+          <div>
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+              การจัดการสมาชิก
+            </h2>
+            <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+              <Link
+                href="/dashboard/coach/applications"
+                className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-black">ใบสมัครสมาชิก</p>
+                    <p className="text-xs text-gray-500">พิจารณาใบสมัครเข้าร่วม</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </Link>
+              <Link
+                href="/dashboard/coach/athletes"
+                className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
+                    <Users className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-black">จัดการนักกีฬา</p>
+                    <p className="text-xs text-gray-500">ดูและจัดการข้อมูล</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </Link>
+            </div>
           </div>
-        </div>
 
-        {/* Info Card */}
-        <div className="rounded-lg bg-white p-6 shadow">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            ข้อมูลโค้ช
-          </h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <p className="text-sm text-gray-600">ชื่อ-นามสกุล</p>
-              <p className="mt-1 font-medium text-gray-900">
-                {profile.first_name} {profile.last_name}
-              </p>
+          {/* การฝึกซ้อม */}
+          <div>
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+              การฝึกซ้อม
+            </h2>
+            <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+              <Link
+                href="/dashboard/coach/sessions"
+                className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
+                    <Calendar className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-black">ตารางฝึกซ้อม</p>
+                    <p className="text-xs text-gray-500">สร้างและจัดการตาราง</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </Link>
+              <Link
+                href="/dashboard/coach/attendance"
+                className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
+                    <ClipboardList className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-black">เช็คชื่อ</p>
+                    <p className="text-xs text-gray-500">บันทึกการเข้าร่วม</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </Link>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">สโมสร</p>
-              <p className="mt-1 font-medium text-gray-900">
-                {profile.clubs?.name || '-'}
-              </p>
+          </div>
+
+          {/* การประเมินผล */}
+          <div>
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+              การประเมินผล
+            </h2>
+            <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+              <Link
+                href="/dashboard/coach/performance"
+                className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
+                    <BarChart3 className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-black">บันทึกผลการทดสอบ</p>
+                    <p className="text-xs text-gray-500">บันทึกและติดตามผล</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </Link>
             </div>
-            {profile.specialization && (
-              <div>
-                <p className="text-sm text-gray-600">ความเชี่ยวชาญ</p>
-                <p className="mt-1 font-medium text-gray-900">
-                  {profile.specialization}
-                </p>
+          </div>
+
+          {/* Quick Info Card */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <Activity className="h-5 w-5 text-black" />
+              <h3 className="font-semibold text-black">ข้อมูลโค้ช</h3>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">สโมสร</span>
+                <span className="font-medium text-black">{profile.clubs?.name || '-'}</span>
               </div>
-            )}
+              {profile.specialization && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">ความเชี่ยวชาญ</span>
+                  <span className="font-medium text-black">{profile.specialization}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Bottom Spacing for Mobile */}
+        <div className="h-20"></div>
       </div>
     </div>
   );
