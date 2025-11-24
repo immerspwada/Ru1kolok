@@ -39,7 +39,7 @@ export async function createActivity(formData: {
   }
 
   // Create activity
-  const { data: activity, error } = await supabase
+  const { data: activity, error } = (await supabase
     .from('activities')
     .insert({
       club_id: (coach as any).club_id,
@@ -47,7 +47,7 @@ export async function createActivity(formData: {
       ...formData,
     })
     .select()
-    .single();
+    .single()) as any;
 
   if (error) {
     return { error: error.message };
