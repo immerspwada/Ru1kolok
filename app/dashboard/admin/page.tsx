@@ -157,6 +157,14 @@ export default async function AdminDashboard() {
               <h3 className="font-semibold text-gray-900">ดูรายงาน</h3>
               <p className="mt-1 text-sm text-gray-600">สร้างรายงานทั้งระบบ</p>
             </Link>
+            <Link
+              href="/dashboard/admin/rate-limits"
+              className="rounded-lg bg-white p-6 shadow transition-shadow hover:shadow-md"
+            >
+              <Shield className="mb-2 h-8 w-8 text-orange-600" />
+              <h3 className="font-semibold text-gray-900">จัดการ Rate Limiting</h3>
+              <p className="mt-1 text-sm text-gray-600">ปลดล็อกผู้ใช้ที่ถูกบล็อก</p>
+            </Link>
           </div>
         </div>
       </div>

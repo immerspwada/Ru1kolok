@@ -11,7 +11,7 @@ interface DocumentUploadProps {
   value?: string;
   onChange: (url: string, fileName?: string, fileSize?: number) => void;
   error?: string;
-  userId: string;
+  userId: string | null;
 }
 
 export default function DocumentUpload({
@@ -31,6 +31,12 @@ export default function DocumentUpload({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (file: File) => {
+    // Check if userId is available
+    if (!userId) {
+      setUploadError('กรุณาสร้างบัญชีก่อนอัปโหลดเอกสาร');
+      return;
+    }
+
     const validation = validateFile(file);
     if (!validation.valid) {
       setUploadError(validation.error || 'ไฟล์ไม่ถูกต้อง');

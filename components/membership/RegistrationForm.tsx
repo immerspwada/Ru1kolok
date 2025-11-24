@@ -432,10 +432,36 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                 errors={validationErrors}
               />
               {submitError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
-                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-800">{submitError}</p>
-                </div>
+                <>
+                  {submitError.includes('ลองสมัครบ่อยเกินไป') ? (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3 mb-3">
+                        <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm text-yellow-800 font-medium mb-1">
+                            ⏰ ระบบตรวจพบการสมัครบ่อยเกินไป
+                          </p>
+                          <p className="text-xs text-yellow-700">
+                            เพื่อความปลอดภัย ระบบจำกัดจำนวนการสมัครต่อชั่วโมง
+                          </p>
+                        </div>
+                      </div>
+                      <div className="bg-yellow-100 rounded p-3 text-xs text-yellow-800">
+                        <p className="font-medium mb-2">💡 วิธีแก้ไข:</p>
+                        <ul className="list-disc list-inside space-y-1 ml-2">
+                          <li>รอ 1-2 ชั่วโมง แล้วลองใหม่อีกครั้ง</li>
+                          <li>ลองใช้ mobile data แทน WiFi</li>
+                          <li>หากมีปัญหา กรุณาติดต่อเจ้าหน้าที่</li>
+                        </ul>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
+                      <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-red-800">{submitError}</p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

@@ -7,9 +7,9 @@ import { getDeviceInfo } from '@/lib/utils/device-fingerprint';
 import Link from 'next/link';
 
 const TEST_USERS = {
-  admin: { email: 'admin@test.com', password: 'Admin123!' },
-  coach: { email: 'coach@test.com', password: 'Coach123!' },
-  athlete: { email: 'athlete@test.com', password: 'Athlete123!' },
+  admin: { email: 'demo.admin@test.com', password: 'demo1234' },
+  coach: { email: 'demo.coach@test.com', password: 'demo1234' },
+  athlete: { email: 'demo.athlete@test.com', password: 'demo1234' },
 };
 
 const STORAGE_KEY = 'sports_club_login';

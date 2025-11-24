@@ -8,7 +8,7 @@ export interface AuthResult {
   data?: unknown;
 }
 
-export async function signUp(email: string, password: string): Promise<AuthResult> {
+export async function signUp(email: string, password: string): Promise<AuthResult & { userId?: string }> {
   try {
     const supabase = await createClient();
 
@@ -22,11 +22,27 @@ export async function signUp(email: string, password: string): Promise<AuthResul
     });
 
     if (error) {
-      return { success: false, error: error.message };
+      // Log the actual error for debugging
+      console.error('[signUp] Supabase error:', error.message, error);
+      
+      // Translate common Supabase errors to Thai
+      let errorMessage = error.message;
+      
+      if (error.message.toLowerCase().includes('rate limit') || error.message.toLowerCase().includes('too many')) {
+        errorMessage = 'ลองสมัครบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง (1-2 นาที)';
+      } else if (error.message.includes('invalid') && error.message.includes('email')) {
+        errorMessage = 'รูปแบบอีเมลไม่ถูกต้อง กรุณาใช้อีเมลจริง (เช่น example@gmail.com)';
+      } else if (error.message.includes('already registered') || error.message.includes('already been registered')) {
+        errorMessage = 'อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น';
+      } else if (error.message.includes('password')) {
+        errorMessage = 'รหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง';
+      }
+      
+      return { success: false, error: errorMessage };
     }
 
     if (!data.user) {
-      return { success: false, error: 'Failed to create user account' };
+      return { success: false, error: 'ไม่สามารถสร้างบัญชีได้ กรุณาลองใหม่อีกครั้ง' };
     }
 
     // Step 2: Create basic profile (membership_status = null until they apply)
@@ -54,12 +70,12 @@ export async function signUp(email: string, password: string): Promise<AuthResul
       // Don't fail signup if role creation fails - it can be created later
     }
 
-    return { success: true, data };
+    return { success: true, userId: data.user.id };
   } catch (error) {
     console.error('[signUp] Unexpected error:', error);
     return {
       success: false,
-      error: 'An error occurred during sign up',
+      error: 'เกิดข้อผิดพลาดในการสร้างบัญชี กรุณาลองใหม่อีกครั้ง',
     };
   }
 }
