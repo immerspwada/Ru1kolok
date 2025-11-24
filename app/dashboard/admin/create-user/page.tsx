@@ -76,7 +76,7 @@ export default function CreateUserPage() {
       toast({
         title: 'กรุณากรอกข้อมูลให้ครบ',
         description: 'ต้องระบุอีเมล รหัสผ่าน และชื่อ-นามสกุล',
-        variant: 'destructive',
+        variant: 'error',
       });
       return;
     }
@@ -129,7 +129,7 @@ export default function CreateUserPage() {
       toast({
         title: 'เกิดข้อผิดพลาด',
         description: error.message || 'ไม่สามารถสร้างผู้ใช้ได้',
-        variant: 'destructive',
+        variant: 'error',
       });
     } finally {
       setLoading(false);
