@@ -12,6 +12,9 @@ export interface Toast {
   duration?: number;
 }
 
+export type ToastActionElement = React.ReactElement;
+export type ToastProps = Toast;
+
 interface ToastContextValue {
   toasts: Toast[];
   addToast: (toast: Omit<Toast, 'id'>) => void;
