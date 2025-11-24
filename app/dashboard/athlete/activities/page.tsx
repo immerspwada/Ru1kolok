@@ -41,7 +41,7 @@ export default async function AthleteActivitiesPage() {
         athlete_id
       )
     `)
-    .eq('club_id', athlete.club_id)
+    .eq('club_id', (athlete as any).club_id)
     .gte('activity_date', new Date().toISOString().split('T')[0])
     .order('activity_date', { ascending: true })
     .order('start_time', { ascending: true });
@@ -60,7 +60,7 @@ export default async function AthleteActivitiesPage() {
         athlete_id
       )
     `)
-    .eq('club_id', athlete.club_id)
+    .eq('club_id', (athlete as any).club_id)
     .lt('activity_date', new Date().toISOString().split('T')[0])
     .order('activity_date', { ascending: false })
     .order('start_time', { ascending: false })
@@ -76,7 +76,7 @@ export default async function AthleteActivitiesPage() {
         coaches (first_name, last_name)
       )
     `)
-    .eq('athlete_id', athlete.id)
+    .eq('athlete_id', (athlete as any).id)
     .order('registered_at', { ascending: false });
 
   const upcomingCount = upcomingActivities?.length || 0;
@@ -120,15 +120,15 @@ export default async function AthleteActivitiesPage() {
         <TabsContent value="upcoming" className="mt-0">
           <ActivityList
             activities={upcomingActivities || []}
-            athleteId={athlete.id}
+            athleteId={(athlete as any).id}
             type="upcoming"
           />
         </TabsContent>
 
         <TabsContent value="registrations" className="mt-0">
           <ActivityList
-            activities={myRegistrations?.map(r => r.activities) || []}
-            athleteId={athlete.id}
+            activities={myRegistrations?.map((r: any) => r.activities) || []}
+            athleteId={(athlete as any).id}
             registrations={myRegistrations || []}
             type="registrations"
           />
@@ -137,7 +137,7 @@ export default async function AthleteActivitiesPage() {
         <TabsContent value="past" className="mt-0">
           <ActivityList
             activities={pastActivities || []}
-            athleteId={athlete.id}
+            athleteId={(athlete as any).id}
             type="past"
           />
         </TabsContent>
