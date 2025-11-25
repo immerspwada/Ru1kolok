@@ -17,9 +17,8 @@ export default async function MonitoringPage() {
   if (profile?.role !== 'admin') redirect('/dashboard');
   
   // ดึงข้อมูลปัญหาที่เกิดบ่อย (24 ชั่วโมง)
-  const { data: errorStats } = await supabase
-    .rpc('get_error_stats_24h')
-    .catch(() => ({ data: null }));
+  const errorStatsResult = await supabase.rpc('get_error_stats_24h');
+  const errorStats = errorStatsResult.data;
   
   // ดึงข้อผิดพลาดล่าสุด
   const { data: recentErrors } = await supabase
