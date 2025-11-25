@@ -35,7 +35,9 @@ export function SimpleLoginForm() {
         setRememberMe(true);
       }
     } catch (err) {
-      // Ignore errors
+      // Clear corrupted data
+      localStorage.removeItem(STORAGE_KEY);
+      console.warn('Cleared corrupted login data from localStorage');
     }
   }, []);
 
@@ -224,47 +226,49 @@ export function SimpleLoginForm() {
           </Link>
         </div>
 
-        {/* Test Credentials with Slide-down Animation */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <button
-            type="button"
-            onClick={() => setShowTestCredentials(!showTestCredentials)}
-            className="w-full text-sm text-gray-500 active:text-gray-700 font-medium py-2 touch-manipulation transition-colors"
-          >
-            <span className={`inline-block transition-transform duration-200 ${showTestCredentials ? 'rotate-90' : ''}`}>
-              ▶
-            </span>{' '}
-            ข้อมูลทดสอบ
-          </button>
-          
-          <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
-            showTestCredentials ? 'max-h-96 opacity-100 mt-3' : 'max-h-0 opacity-0'
-          }`}>
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => fillCredentials('admin')}
-                className="w-full px-3 py-3 text-base bg-gray-50 hover:bg-gray-100 active:bg-gray-100 border border-gray-200 rounded-lg transition-all duration-200 touch-manipulation transform hover:scale-[1.02] active:scale-[0.98]"
-              >
-                👨‍💼 Admin
-              </button>
-              <button
-                type="button"
-                onClick={() => fillCredentials('coach')}
-                className="w-full px-3 py-3 text-base bg-gray-50 hover:bg-gray-100 active:bg-gray-100 border border-gray-200 rounded-lg transition-all duration-200 touch-manipulation transform hover:scale-[1.02] active:scale-[0.98]"
-              >
-                🏃‍♂️ Coach
-              </button>
-              <button
-                type="button"
-                onClick={() => fillCredentials('athlete')}
-                className="w-full px-3 py-3 text-base bg-gray-50 hover:bg-gray-100 active:bg-gray-100 border border-gray-200 rounded-lg transition-all duration-200 touch-manipulation transform hover:scale-[1.02] active:scale-[0.98]"
-              >
-                🏅 Athlete
-              </button>
+        {/* Test Credentials with Slide-down Animation - Only visible in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={() => setShowTestCredentials(!showTestCredentials)}
+              className="w-full text-sm text-gray-500 active:text-gray-700 font-medium py-2 touch-manipulation transition-colors"
+            >
+              <span className={`inline-block transition-transform duration-200 ${showTestCredentials ? 'rotate-90' : ''}`}>
+                ▶
+              </span>{' '}
+              ข้อมูลทดสอบ
+            </button>
+            
+            <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+              showTestCredentials ? 'max-h-96 opacity-100 mt-3' : 'max-h-0 opacity-0'
+            }`}>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => fillCredentials('admin')}
+                  className="w-full px-3 py-3 text-base bg-gray-50 hover:bg-gray-100 active:bg-gray-100 border border-gray-200 rounded-lg transition-all duration-200 touch-manipulation transform hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  👨‍💼 Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fillCredentials('coach')}
+                  className="w-full px-3 py-3 text-base bg-gray-50 hover:bg-gray-100 active:bg-gray-100 border border-gray-200 rounded-lg transition-all duration-200 touch-manipulation transform hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  🏃‍♂️ Coach
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fillCredentials('athlete')}
+                  className="w-full px-3 py-3 text-base bg-gray-50 hover:bg-gray-100 active:bg-gray-100 border border-gray-200 rounded-lg transition-all duration-200 touch-manipulation transform hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  🏅 Athlete
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

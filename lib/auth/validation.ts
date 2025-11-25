@@ -1,4 +1,5 @@
 import { authConfig } from './config';
+import { sanitizeEmail, sanitizeInput, sanitizePhoneNumber } from '../utils/sanitization';
 
 export interface ValidationResult {
   isValid: boolean;
@@ -13,8 +14,16 @@ export function validateEmail(email: string): ValidationResult {
     return { isValid: false, errors };
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
+  // Sanitize email
+  const sanitized = sanitizeEmail(email);
+  if (!sanitized) {
+    errors.push('รูปแบบอีเมลไม่ถูกต้อง');
+    return { isValid: false, errors };
+  }
+
+  // Enhanced email validation
+  const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+  if (!emailRegex.test(sanitized)) {
     errors.push('รูปแบบอีเมลไม่ถูกต้อง');
   }
 
@@ -33,8 +42,19 @@ export function validatePassword(password: string): ValidationResult {
     return { isValid: false, errors };
   }
 
+  // Check for null bytes and other dangerous characters
+  if (password.includes('\0') || password.includes('\x00')) {
+    errors.push('รหัสผ่านมีอักขระที่ไม่อนุญาต');
+    return { isValid: false, errors };
+  }
+
   if (password.length < passwordRequirements.minLength) {
     errors.push(`รหัสผ่านต้องมีอย่างน้อย ${passwordRequirements.minLength} ตัวอักษร`);
+  }
+
+  // Maximum length check for security
+  if (password.length > 128) {
+    errors.push('รหัสผ่านต้องไม่เกิน 128 ตัวอักษร');
   }
 
   if (passwordRequirements.requireUppercase && !/[A-Z]/.test(password)) {
@@ -67,13 +87,19 @@ export function validatePhoneNumber(phone: string): ValidationResult {
     return { isValid: false, errors };
   }
 
-  // Remove spaces and dashes
-  const cleanPhone = phone.replace(/[\s-]/g, '');
-
-  // Check if it's a valid phone number (10-15 digits)
-  const phoneRegex = /^\+?[\d]{10,15}$/;
-  if (!phoneRegex.test(cleanPhone)) {
+  // Sanitize phone number
+  const sanitized = sanitizePhoneNumber(phone);
+  if (!sanitized) {
     errors.push('รูปแบบเบอร์โทรศัพท์ไม่ถูกต้อง');
+    return { isValid: false, errors };
+  }
+
+  // Thai phone number: 10 digits starting with 0, or international format
+  const thaiPhoneRegex = /^0[0-9]{9}$/;
+  const internationalPhoneRegex = /^\+[1-9][0-9]{7,14}$/;
+
+  if (!thaiPhoneRegex.test(sanitized) && !internationalPhoneRegex.test(sanitized)) {
+    errors.push('รูปแบบเบอร์โทรศัพท์ไม่ถูกต้อง (ตัวอย่าง: 0812345678)');
   }
 
   return {
@@ -129,7 +155,14 @@ export function validateDateOfBirth(dob: string): ValidationResult {
 export function validateRequired(value: string, fieldName: string): ValidationResult {
   const errors: string[] = [];
 
-  if (!value || value.trim() === '') {
+  if (!value) {
+    errors.push(`กรุณากรอก${fieldName}`);
+    return { isValid: false, errors };
+  }
+
+  // Sanitize and check if empty
+  const sanitized = sanitizeInput(value);
+  if (sanitized === '') {
     errors.push(`กรุณากรอก${fieldName}`);
   }
 

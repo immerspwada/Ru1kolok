@@ -90,11 +90,21 @@
 ```bash
 cd sports-club-management
 
-# สร้างบัญชีทดสอบทั้ง 3 ระดับ
-./scripts/run-sql-via-api.sh scripts/create-demo-users.sql
+# สร้างบัญชีทดสอบทั้ง 3 ระดับผ่าน Admin API
+node scripts/create-demo-users-via-api.js
+
+# เชื่อมโยง Athlete กับ Coach
+./scripts/run-sql-via-api.sh scripts/link-demo-athlete-to-coach.sql
 ```
 
 **หมายเหตุ:** สคริปต์จะลบบัญชีเก่าและสร้างใหม่ทั้งหมด
+
+### ทดสอบว่าบัญชีใช้งานได้
+
+```bash
+# ทดสอบ login ทั้ง 3 บัญชี
+node scripts/test-demo-users-auth.js
+```
 
 ---
 
@@ -180,7 +190,11 @@ Demo Sports Club (สโมสร)
 
 ```bash
 # ลบและสร้างใหม่
-./scripts/run-sql-via-api.sh scripts/create-demo-users.sql
+node scripts/create-demo-users-via-api.js
+./scripts/run-sql-via-api.sh scripts/link-demo-athlete-to-coach.sql
+
+# ทดสอบว่าใช้งานได้
+node scripts/test-demo-users-auth.js
 ```
 
 ---

@@ -1,15 +1,17 @@
 import { z } from 'zod';
+import { sanitizeInput, sanitizePhoneNumber } from '../utils/sanitization';
 
 // Phone number format: 0XX-XXX-XXXX
 const phoneRegex = /^0[0-9]{2}-[0-9]{3}-[0-9]{4}$/;
 
-// Personal Information Schema
+// Personal Information Schema with sanitization
 export const personalInfoSchema = z.object({
   full_name: z
     .string()
     .min(2, 'ชื่อ-นามสกุลต้องมีอย่างน้อย 2 ตัวอักษร')
-    .max(100, 'ชื่อ-นามสกุลต้องไม่เกิน 100 ตัวอักษร'),
-  nickname: z.string().optional(),
+    .max(100, 'ชื่อ-นามสกุลต้องไม่เกิน 100 ตัวอักษร')
+    .transform((val) => sanitizeInput(val)),
+  nickname: z.string().optional().transform((val) => val ? sanitizeInput(val) : val),
   gender: z
     .enum(['male', 'female', 'other'])
     .refine((val) => ['male', 'female', 'other'].includes(val), {
@@ -26,16 +28,19 @@ export const personalInfoSchema = z.object({
     }, 'อายุต้องอยู่ระหว่าง 5-100 ปี'),
   phone_number: z
     .string()
-    .regex(phoneRegex, 'รูปแบบเบอร์โทรไม่ถูกต้อง (ตัวอย่าง: 081-234-5678)'),
+    .regex(phoneRegex, 'รูปแบบเบอร์โทรไม่ถูกต้อง (ตัวอย่าง: 081-234-5678)')
+    .transform((val) => sanitizePhoneNumber(val)),
   address: z
     .string()
     .min(10, 'ที่อยู่ต้องมีอย่างน้อย 10 ตัวอักษร')
-    .max(500, 'ที่อยู่ต้องไม่เกิน 500 ตัวอักษร'),
+    .max(500, 'ที่อยู่ต้องไม่เกิน 500 ตัวอักษร')
+    .transform((val) => sanitizeInput(val)),
   emergency_contact: z
     .string()
-    .regex(phoneRegex, 'รูปแบบเบอร์โทรฉุกเฉินไม่ถูกต้อง (ตัวอย่าง: 081-234-5678)'),
-  blood_type: z.string().optional(),
-  medical_conditions: z.string().optional(),
+    .regex(phoneRegex, 'รูปแบบเบอร์โทรฉุกเฉินไม่ถูกต้อง (ตัวอย่าง: 081-234-5678)')
+    .transform((val) => sanitizePhoneNumber(val)),
+  blood_type: z.string().optional().transform((val) => val ? sanitizeInput(val) : val),
+  medical_conditions: z.string().optional().transform((val) => val ? sanitizeInput(val) : val),
 });
 
 export type PersonalInfoInput = z.infer<typeof personalInfoSchema>;

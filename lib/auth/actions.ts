@@ -26,15 +26,27 @@ export async function signUp(email: string, password: string): Promise<AuthResul
       console.error('[signUp] Supabase error:', error.message, error);
       
       // Translate common Supabase errors to Thai
-      let errorMessage = error.message;
+      // Check in order of specificity
+      let errorMessage = 'เกิดข้อผิดพลาดในการสร้างบัญชี กรุณาลองใหม่อีกครั้ง';
       
-      if (error.message.toLowerCase().includes('rate limit') || error.message.toLowerCase().includes('too many')) {
+      const errorLower = error.message.toLowerCase();
+      
+      // Rate limit errors (check first as they're most specific)
+      if (errorLower.includes('rate limit') || 
+          errorLower.includes('too many')) {
         errorMessage = 'ลองสมัครบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง (1-2 นาที)';
-      } else if (error.message.includes('invalid') && error.message.includes('email')) {
-        errorMessage = 'รูปแบบอีเมลไม่ถูกต้อง กรุณาใช้อีเมลจริง (เช่น example@gmail.com)';
-      } else if (error.message.includes('already registered') || error.message.includes('already been registered')) {
+      } 
+      // Duplicate email (check before generic "already" checks)
+      else if (errorLower.includes('already registered') || 
+               errorLower.includes('already been registered')) {
         errorMessage = 'อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น';
-      } else if (error.message.includes('password')) {
+      } 
+      // Invalid email format (check for "invalid" AND "email")
+      else if (errorLower.includes('invalid') && errorLower.includes('email')) {
+        errorMessage = 'รูปแบบอีเมลไม่ถูกต้อง กรุณาใช้อีเมลจริง (เช่น example@gmail.com)';
+      } 
+      // Password errors (check for "password" in message)
+      else if (errorLower.includes('password')) {
         errorMessage = 'รหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง';
       }
       
@@ -46,13 +58,15 @@ export async function signUp(email: string, password: string): Promise<AuthResul
     }
 
     // Step 2: Create basic profile (membership_status = null until they apply)
+    // Note: Profile and role creation failures are logged but don't fail the signup
+    // This ensures the auth account is created even if secondary operations fail
     const { error: profileError } = await supabase.from('profiles').insert({
       user_id: data.user.id,
       full_name: email.split('@')[0], // Use email prefix as temporary name
-      membership_status: null, // Not yet applied for membership
+      membership_status: null as null, // Not yet applied for membership
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    });
+    } as any);
 
     if (profileError) {
       console.error('[signUp] Failed to create profile:', profileError);
@@ -62,8 +76,8 @@ export async function signUp(email: string, password: string): Promise<AuthResul
     // Step 3: Create user role (default: athlete)
     const { error: roleError } = await supabase.from('user_roles').insert({
       user_id: data.user.id,
-      role: 'athlete', // Default role for new signups
-    });
+      role: 'athlete' as const, // Default role for new signups
+    } as any);
 
     if (roleError) {
       console.error('[signUp] Failed to create user role:', roleError);
@@ -104,7 +118,23 @@ export async function signIn(
 
     if (authError) {
       console.error('[signIn] Auth error:', authError);
-      return { success: false, error: authError.message };
+      
+      // Translate common auth errors to Thai
+      // Generic error message that doesn't reveal which field is incorrect (Requirement 3.4)
+      let errorMessage = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+      
+      const errorLower = authError.message.toLowerCase();
+      
+      // Check for specific error types
+      if (errorLower.includes('rate limit') || errorLower.includes('too many')) {
+        errorMessage = 'ลองเข้าสู่ระบบบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง';
+      } else if (errorLower.includes('email not confirmed')) {
+        errorMessage = 'กรุณายืนยันอีเมลของคุณก่อนเข้าสู่ระบบ';
+      } else if (errorLower.includes('network') || errorLower.includes('connection')) {
+        errorMessage = 'เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง';
+      }
+      
+      return { success: false, error: errorMessage };
     }
 
     console.log('[signIn] Authentication successful for user:', authData.user.id);
@@ -112,13 +142,13 @@ export async function signIn(
     // Step 2: Record login session with device info
     if (deviceInfo) {
       try {
-        // Type assertion needed until TypeScript picks up the new database types
-        await (supabase.from('login_sessions') as any).insert({
+        await supabase.from('login_sessions').insert({
           user_id: authData.user.id,
           device_id: deviceInfo.deviceId,
-          device_info: deviceInfo,
+          device_info: deviceInfo as any,
           user_agent: deviceInfo.userAgent,
-        });
+          login_at: new Date().toISOString(),
+        } as any);
         console.log('[signIn] Device info recorded:', deviceInfo.deviceId);
       } catch (error) {
         console.error('[signIn] Failed to record device info:', error);
@@ -132,7 +162,7 @@ export async function signIn(
     console.error('[signIn] Unexpected error:', error);
     return {
       success: false,
-      error: 'An error occurred during sign in: ' + (error instanceof Error ? error.message : 'Unknown error'),
+      error: 'เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่อีกครั้ง',
     };
   }
 }
@@ -148,8 +178,8 @@ export async function signOut(deviceId?: string): Promise<AuthResult> {
           data: { user },
         } = await supabase.auth.getUser();
         if (user) {
-          // Type assertion needed until TypeScript picks up the new database types
-          const { data: session } = await (supabase.from('login_sessions') as any)
+          const { data: session } = await supabase
+            .from('login_sessions')
             .select('id')
             .eq('user_id', user.id)
             .eq('device_id', deviceId)
@@ -159,10 +189,10 @@ export async function signOut(deviceId?: string): Promise<AuthResult> {
             .single();
 
           if (session) {
-            // Type assertion needed until TypeScript picks up the new database types
+            const updateData: any = { logout_at: new Date().toISOString() };
             await (supabase.from('login_sessions') as any)
-              .update({ logout_at: new Date().toISOString() })
-              .eq('id', session.id);
+              .update(updateData)
+              .eq('id', (session as any).id);
           }
         }
       } catch (error) {
@@ -322,6 +352,108 @@ export async function updatePassword(newPassword: string): Promise<AuthResult> {
     return {
       success: false,
       error: 'An error occurred during password update',
+    };
+  }
+}
+
+export interface LoginSession {
+  id: string;
+  user_id: string;
+  device_id: string;
+  device_info: {
+    deviceId: string;
+    userAgent?: string;
+    platform?: string;
+    language?: string;
+    screenResolution?: string;
+    timezone?: string;
+  };
+  user_agent: string | null;
+  login_at: string;
+  logout_at: string | null;
+  created_at: string;
+}
+
+/**
+ * Get login history for the current user
+ * Returns all login sessions with device information
+ * Requirement 6.3: Display all login sessions with device information
+ */
+export async function getLoginHistory(limit = 50): Promise<AuthResult & { sessions?: LoginSession[] }> {
+  try {
+    const supabase = await createClient();
+
+    // Get current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return { success: false, error: 'ไม่พบข้อมูลผู้ใช้' };
+    }
+
+    // Get login sessions for this user
+    const { data, error } = await supabase
+      .from('login_sessions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('login_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('[getLoginHistory] Error:', error);
+      return { success: false, error: 'ไม่สามารถดึงข้อมูลประวัติการเข้าสู่ระบบได้' };
+    }
+
+    return { success: true, sessions: data as LoginSession[] };
+  } catch (error) {
+    console.error('[getLoginHistory] Unexpected error:', error);
+    return {
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการดึงข้อมูลประวัติการเข้าสู่ระบบ',
+    };
+  }
+}
+
+/**
+ * Get active sessions for the current user
+ * Returns sessions that haven't been logged out yet
+ * Requirement 6.4: Track each device separately
+ */
+export async function getActiveSessions(): Promise<AuthResult & { sessions?: LoginSession[] }> {
+  try {
+    const supabase = await createClient();
+
+    // Get current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return { success: false, error: 'ไม่พบข้อมูลผู้ใช้' };
+    }
+
+    // Get active sessions (where logout_at is null)
+    const { data, error } = await supabase
+      .from('login_sessions')
+      .select('*')
+      .eq('user_id', user.id)
+      .is('logout_at', null)
+      .order('login_at', { ascending: false });
+
+    if (error) {
+      console.error('[getActiveSessions] Error:', error);
+      return { success: false, error: 'ไม่สามารถดึงข้อมูล session ที่ใช้งานอยู่ได้' };
+    }
+
+    return { success: true, sessions: data as LoginSession[] };
+  } catch (error) {
+    console.error('[getActiveSessions] Unexpected error:', error);
+    return {
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการดึงข้อมูล session ที่ใช้งานอยู่',
     };
   }
 }

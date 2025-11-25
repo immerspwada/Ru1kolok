@@ -64,12 +64,13 @@ export async function updateSession(request: NextRequest) {
   // Role-based routing for authenticated users
   if (user && request.nextUrl.pathname.startsWith('/dashboard')) {
     // Get user role from database using admin client (bypasses RLS)
-    const { data: userRoleData } = await supabaseAdmin
+    const { data: userRoleData, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
       .maybeSingle();
 
+    console.log('[Middleware] Query result:', { userRoleData, roleError, userId: user.id });
     const userRole = userRoleData?.role || 'athlete';
     console.log('[Middleware] User:', user.email, 'Role:', userRole, 'Path:', request.nextUrl.pathname);
 
@@ -79,15 +80,18 @@ export async function updateSession(request: NextRequest) {
     // - AC4: Post-Approval Access - Athletes with 'active' status can access dashboard
     // - AC5: Rejection Handling - Athletes with 'rejected' status cannot access dashboard
     // - AC6: Pending State Restrictions - Athletes with 'pending' status cannot access dashboard
+    // NOTE: Admin and Coach roles bypass membership_status checks
     if (userRole === 'athlete') {
       // Get athlete's membership status (single source of truth)
-      const { data: profile } = await supabaseAdmin
+      const { data: profile, error: profileError } = await supabaseAdmin
         .from('profiles')
         .select('membership_status')
         .eq('id', user.id)
         .maybeSingle();
 
+      console.log('[Middleware] Profile query result:', { profile, profileError, userId: user.id });
       const membershipStatus = profile?.membership_status;
+      console.log('[Middleware] Athlete membership_status:', membershipStatus);
 
       // If athlete hasn't applied yet (membership_status = null), redirect to register-membership
       if (membershipStatus === null && !request.nextUrl.pathname.startsWith('/register-membership')) {
@@ -110,6 +114,7 @@ export async function updateSession(request: NextRequest) {
         // Athletes must have 'active' membership_status to access dashboard
         // This is the ONLY check - membership_status is the single source of truth
         if (membershipStatus !== 'active') {
+          console.log('[Middleware] Redirecting to pending-approval, status:', membershipStatus);
           const url = request.nextUrl.clone();
           url.pathname = '/pending-approval';
           return NextResponse.redirect(url);
@@ -119,6 +124,7 @@ export async function updateSession(request: NextRequest) {
 
     // If accessing /dashboard root, redirect to role-specific dashboard
     if (request.nextUrl.pathname === '/dashboard') {
+      console.log('[Middleware] Redirecting from /dashboard to role-specific dashboard');
       const url = request.nextUrl.clone();
       if (userRole === 'admin') {
         url.pathname = '/dashboard/admin';
@@ -134,28 +140,27 @@ export async function updateSession(request: NextRequest) {
     }
 
     // Prevent users from accessing dashboards they don't have permission for
-    if (
-      userRole === 'athlete' &&
-      !request.nextUrl.pathname.startsWith('/dashboard/athlete')
-    ) {
+    // Check if user is trying to access a different role's dashboard
+    const isAccessingAdminDashboard = request.nextUrl.pathname.startsWith('/dashboard/admin');
+    const isAccessingCoachDashboard = request.nextUrl.pathname.startsWith('/dashboard/coach');
+    const isAccessingAthleteDashboard = request.nextUrl.pathname.startsWith('/dashboard/athlete');
+
+    if (userRole === 'athlete' && (isAccessingAdminDashboard || isAccessingCoachDashboard)) {
+      console.log('[Middleware] Athlete trying to access non-athlete dashboard, redirecting');
       const url = request.nextUrl.clone();
       url.pathname = '/dashboard/athlete';
       return NextResponse.redirect(url);
     }
 
-    if (
-      userRole === 'coach' &&
-      !request.nextUrl.pathname.startsWith('/dashboard/coach')
-    ) {
+    if (userRole === 'coach' && (isAccessingAdminDashboard || isAccessingAthleteDashboard)) {
+      console.log('[Middleware] Coach trying to access non-coach dashboard, redirecting');
       const url = request.nextUrl.clone();
       url.pathname = '/dashboard/coach';
       return NextResponse.redirect(url);
     }
 
-    if (
-      userRole === 'admin' &&
-      !request.nextUrl.pathname.startsWith('/dashboard/admin')
-    ) {
+    if (userRole === 'admin' && (isAccessingCoachDashboard || isAccessingAthleteDashboard)) {
+      console.log('[Middleware] Admin trying to access non-admin dashboard, redirecting');
       const url = request.nextUrl.clone();
       url.pathname = '/dashboard/admin';
       return NextResponse.redirect(url);

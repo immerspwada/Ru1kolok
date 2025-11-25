@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { signIn } from '@/lib/auth/actions';
 import { validateEmail } from '@/lib/auth/validation';
 import { getRedirectUrl } from '@/lib/auth/config';
+import { getDeviceInfo } from '@/lib/utils/device-fingerprint';
 import { Mail, Lock, Eye, EyeOff, LogIn, UserPlus, TestTube } from 'lucide-react';
 
 // Test credentials for quick testing
@@ -62,7 +63,11 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      const result = await signIn(email, password);
+      // Collect device information for session tracking
+      const deviceInfo = getDeviceInfo();
+      console.log('[LoginForm] Device info collected:', deviceInfo.deviceId);
+      
+      const result = await signIn(email, password, deviceInfo);
       console.log('[LoginForm] Sign in result:', result.success ? 'Success' : 'Failed', result);
 
       if (!result.success) {
@@ -71,17 +76,13 @@ export function LoginForm() {
         return;
       }
 
-      // Redirect based on role
-      type UserRole = 'admin' | 'coach' | 'athlete';
-      const role: UserRole =
-        (result.data as { role?: UserRole } | undefined)?.role || 'athlete';
-      const redirectUrl = getRedirectUrl(role);
-      console.log('[LoginForm] Redirecting to:', redirectUrl, 'for role:', role);
-      router.push(redirectUrl);
+      // Redirect to /dashboard - middleware will handle role-based routing
+      console.log('[LoginForm] Redirecting to /dashboard');
+      router.push('/dashboard');
       router.refresh();
     } catch (error) {
       console.error('[LoginForm] Login error:', error);
-      setError('เกิดข้อผิดพลาดที่ไม่คาดคิด: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      setError('เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่อีกครั้ง');
       setLoading(false);
     }
   };
@@ -192,51 +193,53 @@ export function LoginForm() {
           </Button>
         </form>
 
-        {/* Test Credentials Section - Always Visible */}
-        <div className="relative z-10 space-y-2 p-4 rounded-lg bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200">
-          <p className="text-xs font-semibold text-amber-900 mb-3 flex items-center gap-2">
-            <TestTube className="h-4 w-4" />
-            คลิกเพื่อกรอกข้อมูลทดสอบอัตโนมัติ
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                fillTestCredentials('admin');
-              }}
-              className="relative z-20 px-3 py-2 text-xs font-medium rounded-md border-2 border-purple-300 bg-white hover:bg-purple-50 hover:border-purple-400 transition-all cursor-pointer active:scale-95"
-            >
-              {TEST_CREDENTIALS.admin.label}
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                fillTestCredentials('coach');
-              }}
-              className="relative z-20 px-3 py-2 text-xs font-medium rounded-md border-2 border-blue-300 bg-white hover:bg-blue-50 hover:border-blue-400 transition-all cursor-pointer active:scale-95"
-            >
-              {TEST_CREDENTIALS.coach.label}
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                fillTestCredentials('athlete');
-              }}
-              className="relative z-20 px-3 py-2 text-xs font-medium rounded-md border-2 border-green-300 bg-white hover:bg-green-50 hover:border-green-400 transition-all cursor-pointer active:scale-95"
-            >
-              {TEST_CREDENTIALS.athlete.label}
-            </button>
+        {/* Test Credentials Section - Only visible in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="relative z-10 space-y-2 p-4 rounded-lg bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200">
+            <p className="text-xs font-semibold text-amber-900 mb-3 flex items-center gap-2">
+              <TestTube className="h-4 w-4" />
+              คลิกเพื่อกรอกข้อมูลทดสอบอัตโนมัติ
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  fillTestCredentials('admin');
+                }}
+                className="relative z-20 px-3 py-2 text-xs font-medium rounded-md border-2 border-purple-300 bg-white hover:bg-purple-50 hover:border-purple-400 transition-all cursor-pointer active:scale-95"
+              >
+                {TEST_CREDENTIALS.admin.label}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  fillTestCredentials('coach');
+                }}
+                className="relative z-20 px-3 py-2 text-xs font-medium rounded-md border-2 border-blue-300 bg-white hover:bg-blue-50 hover:border-blue-400 transition-all cursor-pointer active:scale-95"
+              >
+                {TEST_CREDENTIALS.coach.label}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  fillTestCredentials('athlete');
+                }}
+                className="relative z-20 px-3 py-2 text-xs font-medium rounded-md border-2 border-green-300 bg-white hover:bg-green-50 hover:border-green-400 transition-all cursor-pointer active:scale-95"
+              >
+                {TEST_CREDENTIALS.athlete.label}
+              </button>
+            </div>
+            <p className="text-xs text-amber-700 mt-2">
+              ⚠️ ใช้สำหรับทดสอบเท่านั้น
+            </p>
           </div>
-          <p className="text-xs text-amber-700 mt-2">
-            ⚠️ ใช้สำหรับทดสอบเท่านั้น
-          </p>
-        </div>
+        )}
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">

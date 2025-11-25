@@ -2,6 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { sanitizeHtml, sanitizeInput } from '@/lib/utils/sanitization';
+import { validateRequired, validateLength, validateEnum } from '@/lib/utils/enhanced-validation';
 
 export interface CreateAnnouncementInput {
   title: string;
@@ -27,6 +29,34 @@ export async function createAnnouncement(input: CreateAnnouncementInput) {
     return { success: false, error: 'ไม่พบข้อมูลผู้ใช้' };
   }
 
+  // Validate and sanitize input
+  const titleError = validateRequired(input.title, 'หัวข้อประกาศ') || 
+                     validateLength(input.title, 3, 200, 'หัวข้อประกาศ');
+  if (titleError) {
+    return { success: false, error: titleError.message };
+  }
+
+  const messageError = validateRequired(input.message, 'รายละเอียด') || 
+                       validateLength(input.message, 10, 5000, 'รายละเอียด');
+  if (messageError) {
+    return { success: false, error: messageError.message };
+  }
+
+  if (input.priority) {
+    const priorityError = validateEnum(
+      input.priority,
+      ['low', 'normal', 'high', 'urgent'],
+      'ระดับความสำคัญ'
+    );
+    if (priorityError) {
+      return { success: false, error: priorityError.message };
+    }
+  }
+
+  // Sanitize inputs to prevent XSS
+  const sanitizedTitle = sanitizeInput(input.title);
+  const sanitizedMessage = sanitizeHtml(input.message);
+
   // Get coach profile
   const { data: coach, error: coachError } = await supabase
     .from('coaches')
@@ -38,13 +68,13 @@ export async function createAnnouncement(input: CreateAnnouncementInput) {
     return { success: false, error: 'ไม่พบข้อมูลโค้ช' };
   }
 
-  // Create announcement
+  // Create announcement with sanitized data
   const { data, error } = await supabase
     .from('announcements')
     .insert({
       coach_id: coach.id,
-      title: input.title,
-      message: input.message,
+      title: sanitizedTitle,
+      message: sanitizedMessage,
       priority: input.priority || 'normal',
       target_audience: input.target_audience || 'all',
       is_pinned: input.is_pinned || false,

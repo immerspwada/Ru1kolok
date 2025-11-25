@@ -401,6 +401,8 @@ export interface Database {
           device_id: string;
           device_info: Json;
           user_agent: string | null;
+          login_at: string;
+          logout_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -409,6 +411,8 @@ export interface Database {
           device_id: string;
           device_info: Json;
           user_agent?: string | null;
+          login_at?: string;
+          logout_at?: string | null;
           created_at?: string;
         };
         Update: {
@@ -417,6 +421,8 @@ export interface Database {
           device_id?: string;
           device_info?: Json;
           user_agent?: string | null;
+          login_at?: string;
+          logout_at?: string | null;
           created_at?: string;
         };
       };
@@ -528,33 +534,39 @@ export interface Database {
       profiles: {
         Row: {
           id: string;
+          user_id: string;
           email: string;
           full_name: string;
           role: UserRole;
-          membership_status: MembershipStatus;
+          membership_status: MembershipStatus | null;
           coach_id: string | null;
           club_id: string | null;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
-          id: string;
-          email: string;
+          id?: string;
+          user_id: string;
+          email?: string;
           full_name: string;
           role?: UserRole;
-          membership_status?: MembershipStatus;
+          membership_status?: MembershipStatus | null;
           coach_id?: string | null;
           club_id?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
           id?: string;
+          user_id?: string;
           email?: string;
           full_name?: string;
           role?: UserRole;
-          membership_status?: MembershipStatus;
+          membership_status?: MembershipStatus | null;
           coach_id?: string | null;
           club_id?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
       };
     };

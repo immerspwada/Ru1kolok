@@ -119,19 +119,25 @@ async function createDemoUsers() {
 
       if (profileError) {
         console.log(`   ⚠️  Profile: ${profileError.message}`);
+      } else {
+        console.log(`   ✓ Profile created`);
       }
 
-      // สร้าง user_roles สำหรับ admin
-      if (user.role === 'admin') {
-        await supabase.from('user_roles').insert({
-          user_id: newUser.user.id,
-          role: 'admin',
-        });
+      // สร้าง user_roles สำหรับทุก role
+      const { error: roleError } = await supabase.from('user_roles').insert({
+        user_id: newUser.user.id,
+        role: user.role,
+      });
+
+      if (roleError) {
+        console.log(`   ⚠️  User Role: ${roleError.message}`);
+      } else {
+        console.log(`   ✓ User role assigned: ${user.role}`);
       }
 
       // สร้าง coaches record
       if (user.role === 'coach') {
-        await supabase.from('coaches').insert({
+        const { error: coachError } = await supabase.from('coaches').insert({
           user_id: newUser.user.id,
           club_id: clubId,
           first_name: 'Coach',
@@ -140,11 +146,17 @@ async function createDemoUsers() {
           phone_number: '0812345678',
           specialization: 'ฟุตบอล',
         });
+        
+        if (coachError) {
+          console.log(`   ⚠️  Coach record: ${coachError.message}`);
+        } else {
+          console.log(`   ✓ Coach record created`);
+        }
       }
 
       // สร้าง athletes record
       if (user.role === 'athlete') {
-        await supabase.from('athletes').insert({
+        const { error: athleteError } = await supabase.from('athletes').insert({
           user_id: newUser.user.id,
           club_id: clubId,
           email: user.email,
@@ -153,6 +165,12 @@ async function createDemoUsers() {
           date_of_birth: '2000-01-01',
           phone_number: '0898765432',
         });
+        
+        if (athleteError) {
+          console.log(`   ⚠️  Athlete record: ${athleteError.message}`);
+        } else {
+          console.log(`   ✓ Athlete record created`);
+        }
       }
 
       createdUsers.push({

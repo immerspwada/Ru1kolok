@@ -1,12 +1,13 @@
--- ตรวจสอบ test users ที่มีอยู่
+-- Check test users and their profiles
 SELECT 
-    u.id,
-    u.email,
-    u.created_at,
+    p.id,
+    p.email,
     p.full_name,
-    p.role
-FROM auth.users u
-LEFT JOIN profiles p ON u.id = p.id
-WHERE u.email LIKE '%test%'
-ORDER BY u.created_at DESC
-LIMIT 10;
+    p.role,
+    p.membership_status,
+    p.club_id,
+    c.name as club_name
+FROM profiles p
+LEFT JOIN clubs c ON p.club_id = c.id
+ORDER BY p.role, p.email
+LIMIT 20;

@@ -5,6 +5,13 @@ import { revalidatePath } from 'next/cache';
 import { createAuditLog } from '@/lib/audit/actions';
 import { Database } from '@/types/database.types';
 import { invalidatePattern } from '@/lib/utils/cache';
+import { sanitizeInput } from '@/lib/utils/sanitization';
+import { 
+  validateRequired, 
+  validateLength, 
+  validateDateRange,
+  validateTimeRange 
+} from '@/lib/utils/enhanced-validation';
 
 type TrainingSession = Database['public']['Tables']['training_sessions']['Row'];
 type TrainingSessionInsert = Database['public']['Tables']['training_sessions']['Insert'];
@@ -46,40 +53,56 @@ export async function createSession(data: {
       return { error: 'ไม่พบข้อมูลโค้ช' };
     }
 
-    // Validate input
-    if (!data.title || data.title.trim().length === 0) {
-      return { error: 'กรุณากรอกชื่อตารางฝึกซ้อม' };
+    // Comprehensive input validation
+    const titleError = validateRequired(data.title, 'ชื่อตารางฝึกซ้อม') || 
+                       validateLength(data.title, 3, 200, 'ชื่อตารางฝึกซ้อม');
+    if (titleError) {
+      return { error: titleError.message };
     }
 
-    if (!data.location || data.location.trim().length === 0) {
-      return { error: 'กรุณากรอกสถานที่' };
+    const locationError = validateRequired(data.location, 'สถานที่') || 
+                          validateLength(data.location, 2, 200, 'สถานที่');
+    if (locationError) {
+      return { error: locationError.message };
+    }
+
+    if (data.description) {
+      const descError = validateLength(data.description, 0, 1000, 'รายละเอียด');
+      if (descError) {
+        return { error: descError.message };
+      }
     }
 
     // Validate date is not in the past
-    const sessionDate = new Date(data.session_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
-    if (sessionDate < today) {
-      return { error: 'ไม่สามารถสร้างตารางในอดีตได้' };
+    const dateError = validateDateRange(data.session_date, today, undefined, 'วันที่ฝึกซ้อม');
+    if (dateError) {
+      return { error: dateError.message };
     }
 
-    // Validate start_time < end_time
-    if (data.start_time >= data.end_time) {
-      return { error: 'เวลาเริ่มต้องน้อยกว่าเวลาสิ้นสุด' };
+    // Validate time range
+    const timeError = validateTimeRange(data.start_time, data.end_time);
+    if (timeError) {
+      return { error: timeError.message };
     }
 
-    // Create session
+    // Sanitize inputs to prevent XSS
+    const sanitizedTitle = sanitizeInput(data.title);
+    const sanitizedLocation = sanitizeInput(data.location);
+    const sanitizedDescription = data.description ? sanitizeInput(data.description) : null;
+
+    // Create session with sanitized data
     const coachData = coach as Coach;
     const sessionData: TrainingSessionInsert = {
       club_id: coachData.club_id,
       coach_id: coachData.id,
-      title: data.title.trim(),
-      description: data.description?.trim() || null,
+      title: sanitizedTitle,
+      description: sanitizedDescription,
       session_date: data.session_date,
       start_time: data.start_time,
       end_time: data.end_time,
-      location: data.location.trim(),
+      location: sanitizedLocation,
     };
 
     // Type assertion needed until TypeScript picks up the new database types
