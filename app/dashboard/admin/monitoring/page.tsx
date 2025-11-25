@@ -12,7 +12,7 @@ export default async function MonitoringPage() {
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single();
+    .single() as { data: { role: string } | null };
   
   if (profile?.role !== 'admin') redirect('/dashboard');
   
