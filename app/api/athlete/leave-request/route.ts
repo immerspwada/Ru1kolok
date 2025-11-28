@@ -106,9 +106,9 @@ export async function POST(request: NextRequest) {
     }
 
     // No idempotency key, execute normally
-    const result = await requestLeave({ sessionId, reason });
+    const result = await requestLeave({ sessionId, reason }) as any;
 
-    if (result.error || !result.success || !result.data) {
+    if (result.error || !result.success) {
       return NextResponse.json(
         {
           success: false,
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        leaveRequest: result.data
+        leaveRequest: result.data || result
       },
       metadata: {
         timestamp: new Date().toISOString(),
