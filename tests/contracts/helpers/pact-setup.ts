@@ -7,7 +7,13 @@
 import { PactV3, MatchersV3 } from '@pact-foundation/pact';
 import path from 'path';
 
-const { like, eachLike, regex, iso8601DateTime, string } = MatchersV3;
+const { like, eachLike, regex, string } = MatchersV3;
+
+// ISO8601 datetime pattern for timestamps
+const iso8601DateTime = () => regex(
+  '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z?$',
+  '2024-01-01T12:00:00Z'
+);
 
 /**
  * Create a Pact instance for consumer tests
