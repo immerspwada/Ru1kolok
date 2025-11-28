@@ -45,7 +45,7 @@ export function TournamentManagement({ tournamentId }: { tournamentId: string })
     const [detailsResult, athletesResult] = await Promise.all([
       getTournamentDetails(tournamentId),
       getAvailableAthletes(tournamentId),
-    ]);
+    ]) as [any, any];
 
     if (detailsResult.tournament) {
       setTournament(detailsResult.tournament);
