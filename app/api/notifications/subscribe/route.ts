@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Store push subscription in database
-    const { error } = await supabase.from('push_subscriptions').upsert(
+    const { error } = await (supabase as any).from('push_subscriptions').upsert(
       {
         user_id: userId,
         subscription: subscription,
