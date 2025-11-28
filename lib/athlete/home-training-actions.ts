@@ -70,7 +70,8 @@ export async function createHomeTrainingLog(input: CreateHomeTrainingLogInput) {
     return { error: 'กรุณาเข้าร่วมสโมสรก่อนบันทึกการฝึก' };
   }
 
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
     .from('home_training_logs')
     .insert({
       athlete_id: profile.id,
@@ -101,13 +102,14 @@ export async function getMyHomeTrainingLogs() {
     .from('profiles')
     .select('id')
     .eq('user_id', user.id)
-    .single();
+    .single<{ id: string }>();
 
   if (!profile) {
     return { error: 'ไม่พบข้อมูลโปรไฟล์' };
   }
 
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
     .from('home_training_logs')
     .select('*')
     .eq('athlete_id', profile.id)
@@ -124,7 +126,8 @@ export async function getMyHomeTrainingLogs() {
 export async function getHomeTrainingLogById(logId: string) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
     .from('home_training_logs')
     .select(`
       *,
@@ -148,7 +151,8 @@ export async function updateHomeTrainingLog(
 ) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
     .from('home_training_logs')
     .update(updates)
     .eq('id', logId)
@@ -168,7 +172,8 @@ export async function updateHomeTrainingLog(
 export async function deleteHomeTrainingLog(logId: string) {
   const supabase = await createClient();
 
-  const { error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
     .from('home_training_logs')
     .delete()
     .eq('id', logId)
@@ -186,7 +191,8 @@ export async function deleteHomeTrainingLog(logId: string) {
 export async function getHomeTrainingFeedback(logId: string) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
     .from('home_training_feedback')
     .select(`
       *,
@@ -215,7 +221,7 @@ export async function getHomeTrainingStats(days: number = 30) {
     .from('profiles')
     .select('id')
     .eq('user_id', user.id)
-    .single();
+    .single<{ id: string }>();
 
   if (!profile) {
     return { error: 'ไม่พบข้อมูลโปรไฟล์' };
@@ -224,7 +230,8 @@ export async function getHomeTrainingStats(days: number = 30) {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
 
-  const { data, error } = await supabase.rpc('get_athlete_home_training_stats', {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).rpc('get_athlete_home_training_stats', {
     p_athlete_id: profile.id,
     p_start_date: startDate.toISOString().split('T')[0],
     p_end_date: new Date().toISOString().split('T')[0],
