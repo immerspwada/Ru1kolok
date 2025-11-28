@@ -48,7 +48,9 @@ export async function handleIdempotentRequest<T>(
 
   try {
     // Check if idempotency key already exists
-    const { data: existing, error: fetchError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
+    const { data: existing, error: fetchError } = await sb
       .from('idempotency_keys')
       .select('*')
       .eq('key', idempotencyKey)
@@ -79,7 +81,7 @@ export async function handleIdempotentRequest<T>(
     const result = await operation();
 
     // Store the result with idempotency key
-    const { error: insertError } = await supabase
+    const { error: insertError } = await sb
       .from('idempotency_keys')
       .insert({
         key: idempotencyKey,
@@ -93,7 +95,7 @@ export async function handleIdempotentRequest<T>(
       // Check if this is a race condition (another request inserted the key)
       if (insertError.code === '23505') { // Unique constraint violation
         // Fetch the response that was just inserted by the other request
-        const { data: raceResult } = await supabase
+        const { data: raceResult } = await sb
           .from('idempotency_keys')
           .select('*')
           .eq('key', idempotencyKey)
