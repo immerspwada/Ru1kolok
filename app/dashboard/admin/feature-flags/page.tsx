@@ -43,6 +43,7 @@ export default async function FeatureFlagsPage() {
   interface FeatureFlag {
     id: string;
     name: string;
+    description?: string;
     enabled: boolean;
     rollout_percentage: number;
     created_at: string;
