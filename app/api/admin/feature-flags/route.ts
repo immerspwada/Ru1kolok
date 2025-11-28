@@ -27,13 +27,13 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Check if user is admin
-    const { data: userRole } = await supabase
+    const { data: userRole, error: roleError } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
       .single();
 
-    if (userRole?.role !== 'admin') {
+    if (roleError || !userRole || userRole.role !== 'admin') {
       return NextResponse.json(
         { error: 'Forbidden: Admin access required' },
         { status: 403 }
