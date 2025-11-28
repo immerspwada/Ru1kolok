@@ -60,7 +60,7 @@ export async function createHomeTrainingLog(input: CreateHomeTrainingLogInput) {
     .from('profiles')
     .select('id, club_id, role')
     .eq('user_id', user.id)
-    .single();
+    .single<{ id: string; club_id: string | null; role: string }>();
 
   if (!profile || profile.role !== 'athlete') {
     return { error: 'เฉพาะนักกีฬาเท่านั้นที่สามารถบันทึกการฝึกที่บ้านได้' };
