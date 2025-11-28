@@ -69,7 +69,7 @@ export function useOfflineData<T>({
         // Load from cache when offline
         const cachedData = await getFromOfflineStorage<T>(storeName);
         if (cachedData) {
-          setData(cachedData);
+          setData(cachedData as any);
         } else {
           throw new Error('No cached data available');
         }
@@ -81,7 +81,7 @@ export function useOfflineData<T>({
       try {
         const cachedData = await getFromOfflineStorage<T>(storeName);
         if (cachedData) {
-          setData(cachedData);
+          setData(cachedData as any);
           setIsOffline(true);
         }
       } catch (cacheErr) {
