@@ -16,6 +16,11 @@ export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected';
 // Membership Application Types
 export type ApplicationStatus = 'pending' | 'approved' | 'rejected' | 'info_requested';
 
+// Progress Report Types
+export type ReportType = 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom';
+export type ReportStatus = 'draft' | 'published' | 'archived';
+export type PeriodType = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+
 // Membership Status Types
 export type MembershipStatus = 'pending' | 'active' | 'rejected' | 'suspended';
 
@@ -242,10 +247,10 @@ export interface Database {
           updated_at?: string;
         };
       };
-      attendance_logs: {
+      attendance: {
         Row: {
           id: string;
-          training_session_id: string;
+          session_id: string;
           athlete_id: string;
           status: AttendanceStatus;
           check_in_time: string | null;
@@ -253,21 +258,23 @@ export interface Database {
           marked_by: string | null;
           notes: string | null;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
-          training_session_id: string;
+          session_id: string;
           athlete_id: string;
           status: AttendanceStatus;
           check_in_time?: string | null;
-          check_in_method: CheckInMethod;
+          check_in_method?: CheckInMethod;
           marked_by?: string | null;
           notes?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
           id?: string;
-          training_session_id?: string;
+          session_id?: string;
           athlete_id?: string;
           status?: AttendanceStatus;
           check_in_time?: string | null;
@@ -565,6 +572,162 @@ export interface Database {
           membership_status?: MembershipStatus | null;
           coach_id?: string | null;
           club_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      progress_snapshots: {
+        Row: {
+          id: string;
+          athlete_id: string;
+          snapshot_date: string;
+          period_type: PeriodType;
+          period_start: string;
+          period_end: string;
+          total_sessions: number;
+          attended_sessions: number;
+          attendance_rate: number;
+          late_count: number;
+          excused_count: number;
+          performance_tests_count: number;
+          avg_performance_score: number | null;
+          best_performance_score: number | null;
+          performance_improvement: number | null;
+          active_goals_count: number;
+          completed_goals_count: number;
+          avg_goal_progress: number;
+          metadata: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          athlete_id: string;
+          snapshot_date?: string;
+          period_type?: PeriodType;
+          period_start: string;
+          period_end: string;
+          total_sessions?: number;
+          attended_sessions?: number;
+          attendance_rate?: number;
+          late_count?: number;
+          excused_count?: number;
+          performance_tests_count?: number;
+          avg_performance_score?: number | null;
+          best_performance_score?: number | null;
+          performance_improvement?: number | null;
+          active_goals_count?: number;
+          completed_goals_count?: number;
+          avg_goal_progress?: number;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          athlete_id?: string;
+          snapshot_date?: string;
+          period_type?: PeriodType;
+          period_start?: string;
+          period_end?: string;
+          total_sessions?: number;
+          attended_sessions?: number;
+          attendance_rate?: number;
+          late_count?: number;
+          excused_count?: number;
+          performance_tests_count?: number;
+          avg_performance_score?: number | null;
+          best_performance_score?: number | null;
+          performance_improvement?: number | null;
+          active_goals_count?: number;
+          completed_goals_count?: number;
+          avg_goal_progress?: number;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      progress_reports: {
+        Row: {
+          id: string;
+          athlete_id: string;
+          generated_by: string | null;
+          report_type: ReportType;
+          period_start: string;
+          period_end: string;
+          title: string;
+          summary: string | null;
+          highlights: Json;
+          areas_for_improvement: Json;
+          coach_comments: string | null;
+          metrics: Json;
+          charts_data: Json;
+          status: ReportStatus;
+          published_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          athlete_id: string;
+          generated_by?: string | null;
+          report_type?: ReportType;
+          period_start: string;
+          period_end: string;
+          title: string;
+          summary?: string | null;
+          highlights?: Json;
+          areas_for_improvement?: Json;
+          coach_comments?: string | null;
+          metrics?: Json;
+          charts_data?: Json;
+          status?: ReportStatus;
+          published_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          athlete_id?: string;
+          generated_by?: string | null;
+          report_type?: ReportType;
+          period_start?: string;
+          period_end?: string;
+          title?: string;
+          summary?: string | null;
+          highlights?: Json;
+          areas_for_improvement?: Json;
+          coach_comments?: string | null;
+          metrics?: Json;
+          charts_data?: Json;
+          status?: ReportStatus;
+          published_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      feature_flags: {
+        Row: {
+          name: string;
+          enabled: boolean;
+          rollout_percentage: number;
+          description: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          name: string;
+          enabled?: boolean;
+          rollout_percentage?: number;
+          description?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          enabled?: boolean;
+          rollout_percentage?: number;
+          description?: string | null;
           created_at?: string;
           updated_at?: string;
         };

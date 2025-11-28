@@ -1,10 +1,20 @@
 'use client';
 
-import { Calendar, Clock, MapPin, Users } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, MoreVertical, Edit, Trash2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Database } from '@/types/database.types';
 import Link from 'next/link';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { cancelSession } from '@/lib/coach/session-actions';
+import { useToast } from '@/hooks/useToast';
 
 type TrainingSession = Database['public']['Tables']['training_sessions']['Row'];
 
@@ -21,6 +31,10 @@ export function SessionCard({
   onEdit,
   onCancel,
 }: SessionCardProps) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Format date
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -55,6 +69,35 @@ export function SessionCard({
 
   const status = getStatus();
 
+  // Handle delete
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!confirm('คุณแน่ใจหรือไม่ที่จะยกเลิกตารางฝึกซ้อมนี้?')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    const result = await cancelSession(session.id);
+    
+    if (result.error) {
+      toast({
+        title: 'เกิดข้อผิดพลาด',
+        description: result.error,
+        variant: 'error',
+      });
+    } else {
+      toast({
+        title: 'สำเร็จ',
+        description: 'ยกเลิกตารางฝึกซ้อมเรียบร้อยแล้ว',
+        variant: 'success',
+      });
+      router.refresh();
+    }
+    setIsDeleting(false);
+  };
+
   // Status badge styling
   const statusConfig = {
     scheduled: {
@@ -78,23 +121,67 @@ export function SessionCard({
   const currentStatus = statusConfig[status];
 
   return (
-    <Link href={`/dashboard/coach/sessions/${session.id}`}>
-      <div className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all border border-gray-100">
-        {/* Header with Status */}
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
-            <h3 className="text-base font-bold text-black mb-1 line-clamp-1">
-              {session.title}
-            </h3>
-            <span
-              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${currentStatus.className}`}
-            >
-              {currentStatus.label}
-            </span>
-          </div>
-        </div>
+    <div className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all border border-gray-100 relative">
+      {/* Header with Status and Actions */}
+      <div className="flex items-start justify-between mb-3">
+        <Link href={`/dashboard/coach/sessions/${session.id}`} className="flex-1">
+          <h3 className="text-base font-bold text-black mb-1 line-clamp-1 hover:text-blue-600 transition-colors">
+            {session.title}
+          </h3>
+          <span
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${currentStatus.className}`}
+          >
+            {currentStatus.label}
+          </span>
+        </Link>
 
-        {/* Session Info - Compact */}
+        {/* Quick Actions Menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 hover:bg-gray-100"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/dashboard/coach/sessions/${session.id}`);
+              }}
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              ดูรายละเอียด
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/dashboard/coach/attendance/${session.id}`);
+              }}
+            >
+              <Users className="mr-2 h-4 w-4" />
+              เช็คชื่อ
+            </DropdownMenuItem>
+            {status === 'scheduled' && (
+              <DropdownMenuItem
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="text-red-600 focus:text-red-600"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {isDeleting ? 'กำลังยกเลิก...' : 'ยกเลิก'}
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Session Info - Compact */}
+      <Link href={`/dashboard/coach/sessions/${session.id}`}>
         <div className="space-y-2 mb-3">
           {/* Date & Time Combined */}
           <div className="flex items-center text-sm text-gray-600">
@@ -133,7 +220,7 @@ export function SessionCard({
             แตะเพื่อดูรายละเอียด →
           </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 }

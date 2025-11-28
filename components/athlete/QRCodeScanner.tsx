@@ -148,16 +148,8 @@ export function QRCodeScanner({ activityId, onClose, onSuccess }: QRCodeScannerP
     <Dialog open onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-lg flex items-center justify-between">
-            <span>เช็คอินด้วย QR Code</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClose}
-              className="h-6 w-6 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+          <DialogTitle className="text-lg">
+            เช็คอินด้วย QR Code
           </DialogTitle>
         </DialogHeader>
 

@@ -354,3 +354,49 @@ COMMENT ON FUNCTION is_checkin_window_valid IS 'Validate if current time is with
 COMMENT ON FUNCTION determine_checkin_status IS 'Determine if check-in is on-time or late';
 COMMENT ON FUNCTION get_activity_registration_count IS 'Get approved registration count for activity';
 COMMENT ON FUNCTION is_activity_full IS 'Check if activity has reached max participants';
+
+
+-- ============================================================================
+-- DOWN MIGRATION
+-- ============================================================================
+-- Uncomment and run this section to rollback the migration
+-- WARNING: This will delete all activity check-in data
+
+/*
+
+-- Drop helper functions
+DROP FUNCTION IF EXISTS is_activity_full(UUID);
+DROP FUNCTION IF EXISTS get_activity_registration_count(UUID);
+DROP FUNCTION IF EXISTS determine_checkin_status(UUID, TIMESTAMPTZ);
+DROP FUNCTION IF EXISTS is_checkin_window_valid(UUID, TIMESTAMPTZ);
+DROP FUNCTION IF EXISTS generate_activity_qr_token(UUID);
+
+-- Drop triggers
+DROP TRIGGER IF EXISTS update_checkins_updated_at ON activity_checkins;
+DROP TRIGGER IF EXISTS update_registrations_updated_at ON activity_registrations;
+DROP TRIGGER IF EXISTS update_activities_updated_at ON activities;
+
+-- Note: update_updated_at_column() function is shared, don't drop it
+
+-- Drop indexes
+DROP INDEX IF EXISTS idx_checkins_date;
+DROP INDEX IF EXISTS idx_checkins_athlete;
+DROP INDEX IF EXISTS idx_checkins_activity;
+DROP INDEX IF EXISTS idx_registrations_pending;
+DROP INDEX IF EXISTS idx_registrations_athlete;
+DROP INDEX IF EXISTS idx_registrations_activity;
+DROP INDEX IF EXISTS idx_activities_status_date;
+DROP INDEX IF EXISTS idx_activities_qr_token;
+DROP INDEX IF EXISTS idx_activities_coach;
+DROP INDEX IF EXISTS idx_activities_club_date;
+
+-- Drop tables
+DROP TABLE IF EXISTS activity_checkins CASCADE;
+DROP TABLE IF EXISTS activity_registrations CASCADE;
+DROP TABLE IF EXISTS activities CASCADE;
+
+-- Drop enums
+DROP TYPE IF EXISTS registration_status;
+DROP TYPE IF EXISTS activity_type;
+
+*/

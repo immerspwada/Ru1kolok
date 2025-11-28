@@ -1,0 +1,107 @@
+openapi: 3.1.0
+info:
+  title: Sports Club Management - Announcements API
+  version: 1.0.0
+  description: Announcement and communication endpoints
+  contact:
+    name: API Support
+    email: support@sportsclub.example.com
+
+servers:
+  - url: https://your-app.vercel.app/api
+    description: Production server
+
+tags:
+  - name: Announcements
+    description: Announcement management
+
+paths:
+  /coach/announcements:
+    post:
+      tags:
+        - Announcements
+      summary: Create announcement
+      description: Create a new announcement for the club
+      operationId: createAnnouncement
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - content
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+                priority:
+                  type: string
+                  enum: [low, normal, high, urgent]
+                expiresAt:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Announcement created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    get:
+      tags:
+        - Announcements
+      summary: List announcements
+      description: Get announcements for club or system-wide
+      operationId: listAnnouncements
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Announcements retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              error:
+                type: object
+
+security:
+  - bearerAuth: []

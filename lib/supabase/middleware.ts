@@ -1,50 +1,62 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { checkAthleteAccess } from '@/lib/auth/access-control';
+import { createRequestContext, extractCorrelationId } from '@/lib/utils/correlation';
+import { createLogger } from '@/lib/utils/logger';
 
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
+  // Create request context for logging
+  const correlationId = extractCorrelationId(request.headers);
+  const context = createRequestContext(
+    correlationId,
+    undefined,
+    request.url,
+    request.method
   );
+  const logger = createLogger(context);
+  try {
+    let supabaseResponse = NextResponse.next({
+      request,
+    });
 
-  // Create admin client for role checking (bypasses RLS)
-  const supabaseAdmin = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) =>
+              request.cookies.set(name, value)
+            );
+            supabaseResponse = NextResponse.next({
+              request,
+            });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              supabaseResponse.cookies.set(name, value, options)
+            );
+          },
         },
-        setAll() {
-          // No need to set cookies for admin client
+      }
+    );
+
+    // Create admin client for role checking (bypasses RLS)
+    const supabaseAdmin = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll() {
+            // No need to set cookies for admin client
+          },
         },
-      },
-    }
-  );
+      }
+    );
 
   // Refresh session if expired
   const {
@@ -70,9 +82,17 @@ export async function updateSession(request: NextRequest) {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    console.log('[Middleware] Query result:', { userRoleData, roleError, userId: user.id });
+    // Update context with user ID
+    context.userId = user.id;
+    const userLogger = createLogger(context);
+
+    userLogger.debug('User role query result', { userRoleData, roleError, userId: user.id });
     const userRole = userRoleData?.role || 'athlete';
-    console.log('[Middleware] User:', user.email, 'Role:', userRole, 'Path:', request.nextUrl.pathname);
+    userLogger.info('User authentication', { 
+      email: user.email, 
+      role: userRole, 
+      path: request.nextUrl.pathname 
+    });
 
     // ATHLETE ACCESS CONTROL
     // Single Source of Truth: profiles.membership_status
@@ -89,9 +109,9 @@ export async function updateSession(request: NextRequest) {
         .eq('id', user.id)
         .maybeSingle();
 
-      console.log('[Middleware] Profile query result:', { profile, profileError, userId: user.id });
+      userLogger.debug('Profile query result', { profile, profileError, userId: user.id });
       const membershipStatus = profile?.membership_status;
-      console.log('[Middleware] Athlete membership_status:', membershipStatus);
+      userLogger.info('Athlete membership status check', { membershipStatus });
 
       // If athlete hasn't applied yet (membership_status = null), redirect to register-membership
       if (membershipStatus === null && !request.nextUrl.pathname.startsWith('/register-membership')) {
@@ -114,17 +134,24 @@ export async function updateSession(request: NextRequest) {
         // Athletes must have 'active' membership_status to access dashboard
         // This is the ONLY check - membership_status is the single source of truth
         if (membershipStatus !== 'active') {
-          console.log('[Middleware] Redirecting to pending-approval, status:', membershipStatus);
+          userLogger.info('Redirecting to pending-approval', { 
+            status: membershipStatus,
+            path: request.nextUrl.pathname 
+          });
           const url = request.nextUrl.clone();
           url.pathname = '/pending-approval';
-          return NextResponse.redirect(url);
+          const redirectResponse = NextResponse.redirect(url);
+          // Preserve correlation headers
+          redirectResponse.headers.set('X-Correlation-ID', context.correlationId);
+          redirectResponse.headers.set('X-Causation-ID', context.causationId);
+          return redirectResponse;
         }
       }
     }
 
     // If accessing /dashboard root, redirect to role-specific dashboard
     if (request.nextUrl.pathname === '/dashboard') {
-      console.log('[Middleware] Redirecting from /dashboard to role-specific dashboard');
+      userLogger.info('Redirecting from /dashboard to role-specific dashboard', { role: userRole });
       const url = request.nextUrl.clone();
       if (userRole === 'admin') {
         url.pathname = '/dashboard/admin';
@@ -136,7 +163,11 @@ export async function updateSession(request: NextRequest) {
         // Default to athlete if no role specified
         url.pathname = '/dashboard/athlete';
       }
-      return NextResponse.redirect(url);
+      const redirectResponse = NextResponse.redirect(url);
+      // Preserve correlation headers
+      redirectResponse.headers.set('X-Correlation-ID', context.correlationId);
+      redirectResponse.headers.set('X-Causation-ID', context.causationId);
+      return redirectResponse;
     }
 
     // Prevent users from accessing dashboards they don't have permission for
@@ -146,26 +177,56 @@ export async function updateSession(request: NextRequest) {
     const isAccessingAthleteDashboard = request.nextUrl.pathname.startsWith('/dashboard/athlete');
 
     if (userRole === 'athlete' && (isAccessingAdminDashboard || isAccessingCoachDashboard)) {
-      console.log('[Middleware] Athlete trying to access non-athlete dashboard, redirecting');
+      userLogger.warn('Athlete trying to access non-athlete dashboard', { 
+        attemptedPath: request.nextUrl.pathname 
+      });
       const url = request.nextUrl.clone();
       url.pathname = '/dashboard/athlete';
-      return NextResponse.redirect(url);
+      const redirectResponse = NextResponse.redirect(url);
+      redirectResponse.headers.set('X-Correlation-ID', context.correlationId);
+      redirectResponse.headers.set('X-Causation-ID', context.causationId);
+      return redirectResponse;
     }
 
     if (userRole === 'coach' && (isAccessingAdminDashboard || isAccessingAthleteDashboard)) {
-      console.log('[Middleware] Coach trying to access non-coach dashboard, redirecting');
+      userLogger.warn('Coach trying to access non-coach dashboard', { 
+        attemptedPath: request.nextUrl.pathname 
+      });
       const url = request.nextUrl.clone();
       url.pathname = '/dashboard/coach';
-      return NextResponse.redirect(url);
+      const redirectResponse = NextResponse.redirect(url);
+      redirectResponse.headers.set('X-Correlation-ID', context.correlationId);
+      redirectResponse.headers.set('X-Causation-ID', context.causationId);
+      return redirectResponse;
     }
 
     if (userRole === 'admin' && (isAccessingCoachDashboard || isAccessingAthleteDashboard)) {
-      console.log('[Middleware] Admin trying to access non-admin dashboard, redirecting');
+      userLogger.warn('Admin trying to access non-admin dashboard', { 
+        attemptedPath: request.nextUrl.pathname 
+      });
       const url = request.nextUrl.clone();
       url.pathname = '/dashboard/admin';
-      return NextResponse.redirect(url);
+      const redirectResponse = NextResponse.redirect(url);
+      redirectResponse.headers.set('X-Correlation-ID', context.correlationId);
+      redirectResponse.headers.set('X-Causation-ID', context.causationId);
+      return redirectResponse;
     }
   }
 
+  // Add correlation headers to final response
+  supabaseResponse.headers.set('X-Correlation-ID', context.correlationId);
+  supabaseResponse.headers.set('X-Causation-ID', context.causationId);
+  
   return supabaseResponse;
+  } catch (error) {
+    logger.error('Middleware error', error as Error, {
+      url: request.url,
+      method: request.method,
+    });
+    // Return response even if there's an error to prevent 500
+    const errorResponse = NextResponse.next({ request });
+    errorResponse.headers.set('X-Correlation-ID', context.correlationId);
+    errorResponse.headers.set('X-Causation-ID', context.causationId);
+    return errorResponse;
+  }
 }

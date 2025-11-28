@@ -1,0 +1,1302 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Sports Club Management System - Feature Registry",
+  "description": "Comprehensive registry of all features, their dependencies, endpoints, events, and migrations",
+  "version": "1.0.0",
+  "lastUpdated": "2025-11-27",
+  "features": {
+    "auth-database-integration": {
+      "name": "Authentication and Database Integration",
+      "category": "core",
+      "status": "production",
+      "owner": "Platform Team",
+      "description": "Multi-role authentication system with database-backed user management, session tracking, and device fingerprinting",
+      "requirements": [
+        "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10"
+      ],
+      "dependencies": [],
+      "endpoints": {
+        "http": [
+          "POST /api/auth/signup",
+          "POST /api/auth/signin",
+          "POST /api/auth/signout",
+          "POST /api/auth/verify-otp",
+          "POST /api/auth/resend-otp",
+          "POST /api/auth/reset-password"
+        ],
+        "openapi": "openapi/auth.yaml"
+      },
+      "events": {
+        "produces": [
+          "org.club.auth.user.registered.v1",
+          "org.club.auth.user.verified.v1",
+          "org.club.auth.session.created.v1",
+          "org.club.auth.session.ended.v1"
+        ],
+        "consumes": []
+      },
+      "migrations": [
+        "01-schema-only.sql",
+        "02-auth-functions-and-rls.sql",
+        "03-setup-test-data.sql",
+        "18-add-device-tracking.sql",
+        "22-create-login-sessions-table.sql"
+      ],
+      "database": {
+        "tables": [
+          "auth.users",
+          "profiles",
+          "user_roles",
+          "login_sessions"
+        ],
+        "functions": [
+          "get_user_role()",
+          "get_user_club_id()",
+          "is_admin()",
+          "is_coach()"
+        ],
+        "policies": [
+          "profiles: users_own_profile",
+          "profiles: coaches_view_club_profiles",
+          "profiles: admins_full_access",
+          "user_roles: users_view_own_role",
+          "login_sessions: users_view_own_sessions"
+        ]
+      },
+      "components": {
+        "frontend": [
+          "components/auth/LoginForm.tsx",
+          "components/auth/RegistrationForm.tsx",
+          "components/auth/OTPVerification.tsx",
+          "components/auth/SimpleLoginForm.tsx",
+          "components/auth/SimpleRegistrationForm.tsx",
+          "components/auth/AuthProvider.tsx"
+        ],
+        "backend": [
+          "lib/auth/actions.ts",
+          "lib/auth/validation.ts",
+          "lib/auth/device-tracking.ts",
+          "lib/auth/access-control.ts",
+          "lib/supabase/middleware.ts"
+        ]
+      },
+      "tests": [
+        "tests/registration-creates-auth-account.property.test.ts",
+        "tests/registration-creates-profile.property.test.ts",
+        "tests/registration-creates-default-role.property.test.ts",
+        "tests/login-creates-session.property.test.ts",
+        "tests/login-records-device-info.property.test.ts",
+        "tests/logout-updates-session.property.test.ts",
+        "tests/role-based-redirect.property.test.ts",
+        "tests/invalid-credentials-error.property.test.ts",
+        "tests/email-validation.property.test.ts",
+        "tests/password-validation.property.test.ts",
+        "tests/phone-validation.property.test.ts",
+        "tests/age-validation.property.test.ts",
+        "tests/auth-integration.test.ts",
+        "tests/session-management.test.ts"
+      ]
+    },
+    "membership-approval-system": {
+      "name": "Membership Application and Approval",
+      "category": "core",
+      "status": "production",
+      "owner": "Membership Team",
+      "description": "Club-based membership application workflow with document uploads, coach review, and approval/rejection process",
+      "requirements": [
+        "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8", "2.9", "2.10"
+      ],
+      "dependencies": [
+        "auth-database-integration"
+      ],
+      "endpoints": {
+        "http": [
+          "POST /api/membership/apply",
+          "GET /api/membership/applications",
+          "GET /api/membership/applications/:id",
+          "PUT /api/membership/applications/:id",
+          "POST /api/membership/documents"
+        ],
+        "openapi": "openapi/membership.yaml"
+      },
+      "events": {
+        "produces": [
+          "org.club.membership.application.submitted.v1",
+          "org.club.membership.application.approved.v1",
+          "org.club.membership.application.rejected.v1"
+        ],
+        "consumes": [
+          "org.club.auth.user.registered.v1"
+        ]
+      },
+      "migrations": [
+        "27-create-membership-applications.sql",
+        "28-membership-applications-rls.sql",
+        "30-create-system-settings.sql",
+        "31-update-membership-applications.sql",
+        "32-update-profiles-membership-status.sql",
+        "33-membership-approval-rls.sql",
+        "34-membership-helper-functions.sql",
+        "40-add-membership-constraints.sql",
+        "41-create-membership-documents-bucket.sql"
+      ],
+      "database": {
+        "tables": [
+          "membership_applications",
+          "system_settings"
+        ],
+        "functions": [
+          "approve_application_atomic()",
+          "reject_application_atomic()"
+        ],
+        "policies": [
+          "membership_applications: athletes_view_own",
+          "membership_applications: coaches_view_club",
+          "membership_applications: admins_full_access"
+        ],
+        "storage": [
+          "membership-documents"
+        ]
+      },
+      "components": {
+        "frontend": [
+          "components/membership/RegistrationForm.tsx",
+          "components/membership/PersonalInfoForm.tsx",
+          "components/membership/SportSelection.tsx",
+          "components/membership/DocumentUpload.tsx",
+          "components/membership/ApplicationList.tsx",
+          "components/membership/ApplicationDetailModal.tsx",
+          "components/membership/ApplicationStatusCard.tsx",
+          "components/membership/AccountCreationForm.tsx",
+          "app/register-membership/page.tsx",
+          "app/dashboard/athlete/applications/page.tsx",
+          "app/dashboard/coach/applications/page.tsx"
+        ],
+        "backend": [
+          "lib/membership/actions.ts",
+          "lib/membership/queries.ts",
+          "lib/membership/validation.ts",
+          "lib/membership/storage.ts"
+        ]
+      },
+      "tests": [
+        "tests/membership-submit-application.test.ts",
+        "tests/membership-review-application.test.ts",
+        "tests/membership-access-control.test.ts",
+        "tests/membership-validation.test.ts",
+        "tests/membership-workflow.test.ts",
+        "tests/duplicate-pending-application.test.ts",
+        "tests/athlete-view-own-applications.test.ts",
+        "tests/coach-club-isolation.test.ts",
+        "tests/profile-membership-status-update.test.ts",
+        "tests/membership.property.test.ts"
+      ]
+    },
+    "training-attendance": {
+      "name": "Training Session and Attendance Management",
+      "category": "core",
+      "status": "production",
+      "owner": "Training Team",
+      "description": "Training session creation, scheduling, and attendance tracking with QR code check-in, manual marking, and leave requests",
+      "requirements": [
+        "3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7", "3.8", "3.9", "3.10",
+        "4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", "4.8", "4.9", "4.10",
+        "5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7", "5.8", "5.9", "5.10"
+      ],
+      "dependencies": [
+        "auth-database-integration",
+        "membership-approval-system"
+      ],
+      "endpoints": {
+        "http": [
+          "POST /api/coach/sessions",
+          "GET /api/coach/sessions",
+          "GET /api/coach/sessions/:id",
+          "PUT /api/coach/sessions/:id",
+          "DELETE /api/coach/sessions/:id",
+          "GET /api/athlete/sessions",
+          "POST /api/athlete/check-in/:sessionId",
+          "POST /api/coach/attendance",
+          "GET /api/coach/attendance/:sessionId",
+          "GET /api/athlete/attendance",
+          "GET /api/athlete/attendance/stats",
+          "POST /api/athlete/leave-request",
+          "GET /api/athlete/leave-requests",
+          "PUT /api/coach/leave-requests/:id"
+        ],
+        "openapi": "openapi/training.yaml,openapi/attendance.yaml"
+      },
+      "events": {
+        "produces": [
+          "org.club.training.session.created.v1",
+          "org.club.training.session.updated.v1",
+          "org.club.training.session.cancelled.v1",
+          "org.club.training.attendance.recorded.v1"
+        ],
+        "consumes": [
+          "org.club.membership.application.approved.v1"
+        ]
+      },
+      "migrations": [
+        "10-add-training-sessions-fields.sql",
+        "11-add-attendance-logs-fields.sql",
+        "12-create-leave-requests-table.sql",
+        "13-create-training-attendance-indexes.sql",
+        "15-training-sessions-rls-policies.sql",
+        "16-attendance-rls-policies.sql",
+        "17-cleanup-attendance-policies.sql",
+        "19-add-training-sessions-core-fields.sql",
+        "20-make-team-id-nullable.sql",
+        "21-make-legacy-fields-nullable.sql"
+      ],
+      "database": {
+        "tables": [
+          "training_sessions",
+          "attendance",
+          "leave_requests"
+        ],
+        "functions": [],
+        "policies": [
+          "training_sessions: coaches_own_club",
+          "training_sessions: athletes_view_club",
+          "attendance: coaches_manage_club",
+          "attendance: athletes_view_own",
+          "leave_requests: athletes_own_requests",
+          "leave_requests: coaches_review_club"
+        ]
+      },
+      "components": {
+        "frontend": [
+          "components/coach/SessionForm.tsx",
+          "components/coach/SessionList.tsx",
+          "components/coach/SessionCard.tsx",
+          "components/coach/CreateSessionDialog.tsx",
+          "components/coach/AttendanceSheet.tsx",
+          "components/coach/AttendanceSheetWrapper.tsx",
+          "components/coach/AthleteCheckbox.tsx",
+          "components/coach/QRCodeDisplay.tsx",
+          "components/athlete/ScheduleCard.tsx",
+          "components/athlete/CheckInButton.tsx",
+          "components/athlete/AttendanceHistory.tsx",
+          "components/athlete/AttendanceStats.tsx",
+          "components/athlete/LeaveRequestForm.tsx",
+          "components/athlete/LeaveRequestHistory.tsx",
+          "app/dashboard/coach/sessions/page.tsx",
+          "app/dashboard/coach/attendance/page.tsx",
+          "app/dashboard/athlete/schedule/page.tsx",
+          "app/dashboard/athlete/attendance/page.tsx"
+        ],
+        "backend": [
+          "lib/coach/session-actions.ts",
+          "lib/coach/attendance-actions.ts",
+          "lib/athlete/attendance-actions.ts",
+          "lib/admin/attendance-actions.ts"
+        ]
+      },
+      "tests": [
+        "tests/check-in-time-window.property.test.ts",
+        "tests/no-duplicate-checkins.property.test.ts",
+        "tests/attendance-rate-bounds.property.test.ts",
+        "tests/attendance-calculations.test.ts",
+        "tests/session-date-validation.property.test.ts",
+        "tests/leave-request-workflow.test.ts",
+        "tests/training-attendance-permissions.test.ts",
+        "tests/admin-session-management.test.ts"
+      ]
+    },
+    "performance-tracking": {
+      "name": "Performance Tracking and Analytics",
+      "category": "core",
+      "status": "production",
+      "owner": "Performance Team",
+      "description": "Athlete performance recording, trend analysis, and comparative statistics for coaches",
+      "requirements": [
+        "6.1", "6.2", "6.3", "6.4", "6.5", "6.6", "6.7", "6.8", "6.9", "6.10"
+      ],
+      "dependencies": [
+        "auth-database-integration",
+        "membership-approval-system"
+      ],
+      "endpoints": {
+        "http": [
+          "POST /api/coach/performance",
+          "GET /api/coach/performance/:athleteId",
+          "GET /api/athlete/performance",
+          "GET /api/athlete/performance/trends"
+        ],
+        "openapi": "openapi/performance.yaml"
+      },
+      "events": {
+        "produces": [
+          "org.club.performance.record.created.v1"
+        ],
+        "consumes": []
+      },
+      "migrations": [
+        "61-add-feedback-and-goals.sql"
+      ],
+      "database": {
+        "tables": [
+          "performance_records",
+          "athlete_goals"
+        ],
+        "functions": [],
+        "policies": [
+          "performance_records: coaches_manage_club",
+          "performance_records: athletes_view_own",
+          "athlete_goals: coaches_manage_club",
+          "athlete_goals: athletes_view_own"
+        ]
+      },
+      "components": {
+        "frontend": [
+          "components/coach/PerformanceRecordForm.tsx",
+          "components/coach/PerformanceComparison.tsx",
+          "components/athlete/PerformanceChart.tsx",
+          "components/athlete/PerformanceTrendAnalysis.tsx",
+          "components/athlete/PerformanceHistoryClient.tsx",
+          "app/dashboard/coach/performance/page.tsx",
+          "app/dashboard/athlete/performance/page.tsx"
+        ],
+        "backend": [
+          "lib/coach/performance-actions.ts"
+        ]
+      },
+      "tests": []
+    },
+    "announcement-system": {
+      "name": "Announcements and Communication",
+      "category": "communication",
+      "status": "production",
+      "owner": "Communication Team",
+      "description": "Club-specific and system-wide announcements with priority levels and expiration",
+      "requirements": [
+        "7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7", "7.8", "7.9", "7.10"
+      ],
+      "dependencies": [
+        "auth-database-integration",
+        "notification-system"
+      ],
+      "endpoints": {
+        "http": [
+          "POST /api/coach/announcements",
+          "GET /api/coach/announcements",
+          "PUT /api/coach/announcements/:id",
+          "DELETE /api/coach/announcements/:id",
+          "GET /api/athlete/announcements"
+        ],
+        "openapi": "openapi/announcements.yaml"
+      },
+      "events": {
+        "produces": [
+          "org.club.communication.announcement.published.v1"
+        ],
+        "consumes": []
+      },
+      "migrations": [
+        "55-create-announcements-table.sql"
+      ],
+      "database": {
+        "tables": [
+          "announcements"
+        ],
+        "functions": [],
+        "policies": [
+          "announcements: coaches_manage_club",
+          "announcements: athletes_view_club",
+          "announcements: admins_full_access"
+        ]
+      },
+      "components": {
+        "frontend": [
+          "components/coach/CreateAnnouncementDialog.tsx",
+          "components/coach/EditAnnouncementDialog.tsx",
+          "components/coach/AnnouncementList.tsx",
+          "components/athlete/AnnouncementCard.tsx",
+          "app/dashboard/coach/announcements/page.tsx",
+          "app/dashboard/athlete/announcements/page.tsx"
+        ],
+        "backend": [
+          "lib/coach/announcement-actions.ts"
+        ]
+      },
+      "tests": []
+    },
+    "notification-system": {
+      "name": "Real-Time Notifications",
+      "category": "communication",
+      "status": "production",
+      "owner": "Communication Team",
+      "description": "Real-time notification system with user preferences, deep linking, and badge counts",
+      "requirements": [
+        "13.1", "13.2", "13.3", "13.4", "13.5", "13.6", "13.7", "13.8", "13.9", "13.10"
+      ],
+      "dependencies": [
+        "auth-database-integration"
+      ],
+      "endpoints": {
+        "http": [
+          "GET /api/notifications",
+          "PUT /api/notifications/:id/read",
+          "GET /api/notifications/preferences",
+          "PUT /api/notifications/preferences"
+        ],
+        "openapi": "openapi/announcements.yaml"
+      },
+      "events": {
+        "produces": [
+          "org.club.communication.notification.sent.v1"
+        ],
+        "consumes": [
+          "org.club.membership.application.approved.v1",
+          "org.club.membership.application.rejected.v1",
+          "org.club.training.session.created.v1",
+          "org.club.training.session.cancelled.v1",
+          "org.club.communication.announcement.published.v1",
+          "org.club.performance.report.published.v1"
+        ]
+      },
+      "migrations": [
+        "70-create-notifications-system.sql"
+      ],
+      "database": {
+        "tables": [
+          "notifications",
+          "notification_preferences"
+        ],
+        "functions": [],
+        "policies": [
+          "notifications: users_view_own",
+          "notification_preferences: users_manage_own"
+        ]
+      },
+      "components": {
+        "frontend": [
+          "components/athlete/NotificationBell.tsx",
+          "components/athlete/NotificationList.tsx",
+          "components/athlete/NotificationPreferencesDialog.tsx"
+        ],
+        "backend": [
+          "lib/notifications/actions.ts"
+        ]
+      },
+      "tests": [
+        "tests/push-notifications.property.test.ts"
+      ]
+    },
+    "parent-portal": {
+      "name": "Parent Portal and Monitoring",
+      "category": "communication",
+      "status": "production",
+      "owner": "Parent Engagement Team",
+      "description": "Parent dashboard for monitoring athlete children's progress, attendance, and receiving notifications",
+      "requirements": [
+        "8.1", "8.2", "8.3", "8.4", "8.5", "8.6", "8.7", "8.8", "8.9", "8.10"
+      ],
+      "dependencies": [
+        "auth-database-integration",
+        "training-attendance",
+        "progress-reports",
+        "notification-system"
+      ],
+      "endpoints": {
+        "http": [
+          "POST /api/parent/connect",
+          "GET /api/parent/athletes",
+          "GET /api/parent/athlete/:id/attendance",
+          "GET /api/parent/athlete/:id/reports"
+        ],
+        "openapi": "openapi/parent.yaml"
+      },
+      "events": {
+        "produces": [],
+        "consumes": [
+          "org.club.training.attendance.recorded.v1",
+          "org.club.performance.report.published.v1"
+        ]
+      },
+      "migrations": [
+        "91-create-parent-notification-system.sql",
+        "92-create-parent-dashboard-system.sql",
+        "93-create-demo-parent-accounts.sql"
+      ],
+      "database": {
+        "tables": [
+          "parent_connections",
+          "parent_notifications"
+        ],
+        "functions": [],
+        "policies": [
+          "parent_connections: parents_view_own",
+          "parent_connections: athletes_manage_own",
+          "parent_notifications: parents_view_own"
+        ]
+      },
+      "components": {
+        "frontend": [
+          "components/parent/ParentLoginForm.tsx",
+          "components/parent/ParentDashboard.tsx",
+          "components/athlete/ParentConnectionForm.tsx",
+          "components/athlete/ParentConnectionList.tsx",
+          "app/parent/login/page.tsx",
+          "app/parent/dashboard/page.tsx",
+          "app/dashboard/athlete/profile/parents/page.tsx"
+        ],
+        "backend": [
+          "lib/parent/actions.ts",
+          "lib/parent-auth/actions.ts"
+        ]
+      },
+      "tests": []
+    },
+    "home-training": {
+      "name": "Home Training Logs",
+      "category": "advanced",
+      "status": "production",
+      "owner": "Training Team",
+      "description": "Self-directed training activity logging with media uploads and coach feedback",
+      "requirements": [
+        "9.1", "9.2", "9.3", "9.4", "9.5", "9.6", "9.7", "9.8", "9.9", "9.10"
+      ],
+      "dependencies": [
+        "auth-database-integration",
+        "membership-approval-system"
+      ],
+      "endpoints": {
+        "http": [
+          "POST /api/athlete/home-training",
+          "GET /api/athlete/home-training",
+          "GET /api/coach/home-training",
+          "PUT /api/coach/home-training/:id/feedback"
+        ],
+        "openapi": "openapi/training.yaml"
+      },
+      "events": {
+        "produces": [],
+        "consumes": []
+      },
+      "migrations": [
+        "100-create-home-training-system.sql",
+        "101-create-home-training-storage.sql"
+      ],
+      "database": {
+        "tables": [
+          "home_training_logs"
+        ],
+        "functions": [],
+        "policies": [
+          "home_training_logs: athletes_manage_own",
+          "home_training_logs: coaches_view_club"
+        ],
+        "storage": [
+          "home-training-media"
+        ]
+      },
+      "components": {
+        "frontend": [
+          "components/athlete/CreateHomeTrainingDialog.tsx",
+          "components/athlete/HomeTrainingList.tsx",
+          "components/athlete/HomeTrainingStats.tsx",
+          "components/coach/CoachHomeTrainingList.tsx",
+          "components/coach/GiveFeedbackDialog.tsx",
+          "app/dashboard/athlete/home-training/page.tsx"
+        ],
+        "backend": [
+          "lib/athlete/home-training-actions.ts",
+          "lib/coach/home-training-actions.ts"
+        ]
+      },
+      "tests": []
+    },
+    "tournaments": {
+      "name": "Tournament Management",
+      "category": "advanced",
+      "status": "production",
+      "owner": "Competition Team",
+      "description": "Tournament creation, participant registration, and result tracking",
+      "requirements": [
+        "11.1", "11.2", "11.3", "11.4", "11.5", "11.6", "11.7", "11.8", "11.9", "11.10"
+      ],
+      "dependencies": [
+        "auth-database-integration",
+        "membership-approval-system"
+      ],
+      "endpoints": {
+        "http": [
+          "POST /api/coach/tournaments",
+          "GET /api/coach/tournaments",
+          "PUT /api/coach/tournaments/:id",
+          "POST /api/athlete/tournaments/:id/register",
+          "GET /api/athlete/tournaments"
+        ],
+        "openapi": "openapi/training.yaml"
+      },
+      "events": {
+        "produces": [],
+        "consumes": []
+      },
+      "migrations": [
+        "80-create-tournaments-system.sql"
+      ],
+      "database": {
+        "tables": [
+          "tournaments",
+          "tournament_participants"
+        ],
+        "functions": [],
+        "policies": [
+          "tournaments: coaches_manage_club",
+          "tournaments: athletes_view_club",
+          "tournament_participants: athletes_manage_own",
+          "tournament_participants: coaches_view_club"
+        ]
+      },
+      "components": {
+        "frontend": [
+          "components/coach/CreateTournamentDialog.tsx",
+          "components/coach/TournamentList.tsx",
+          "components/coach/TournamentCard.tsx",
+          "components/coach/TournamentManagement.tsx"
+        ],
+        "backend": [
+          "lib/coach/tournament-actions.ts"
+        ]
+      },
+      "tests": []
+    },
+    "activity-checkin": {
+      "name": "Activity Check-in System",
+      "category": "advanced",
+      "status": "production",
+      "owner": "Training Team",
+      "description": "QR code-based check-in system for general club activities beyond training sessions",
+      "requirements": [
+        "12.1", "12.2", "12.3", "12.4", "12.5", "12.6", "12.7", "12.8", "12.9", "12.10"
+      ],
+      "dependencies": [
+        "auth-database-integration",
+        "membership-approval-system"
+      ],
+      "endpoints": {
+        "http": [
+          "POST /api/coach/activities",
+          "GET /api/coach/activities",
+          "POST /api/athlete/activities/:id/checkin",
+          "GET /api/athlete/activities"
+        ],
+        "openapi": "openapi/training.yaml"
+      },
+      "events": {
+        "produces": [],
+        "consumes": []
+      },
+      "migrations": [
+        "50-create-activity-checkin-system.sql",
+        "51-activity-checkin-rls-policies.sql",
+        "52-seed-sample-activities.sql"
+      ],
+      "database": {
+        "tables": [
+          "activities",
+          "activity_checkins"
+        ],
+        "functions": [],
+        "policies": [
+          "activities: coaches_manage_club",
+          "activities: athletes_view_club",
+          "activity_checkins: athletes_manage_own",
+          "activity_checkins: coaches_view_club"
+        ]
+      },
+      "components": {
+        "frontend": [
+          "components/coach/CreateActivityDialog.tsx",
+          "components/coach/CoachActivityList.tsx",
+          "components/athlete/ActivityList.tsx",
+          "components/athlete/QRCodeScanner.tsx",
+          "app/dashboard/athlete/activities/page.tsx"
+        ],
+        "backend": [
+          "lib/activity/actions.ts"
+        ]
+      },
+      "tests": []
+    },
+    "progress-reports": {
+      "name": "Progress Reports and Assessments",
+      "category": "advanced",
+      "status": "production",
+      "owner": "Performance Team",
+      "description": "Formal progress reports with structured feedback, goals, and parent visibility",
+      "requirements": [
+        "10.1", "10.2", "10.3", "10.4", "10.5", "10.6", "10.7", "10.8", "10.9", "10.10"
+      ],
+      "dependencies": [
+        "auth-database-integration",
+        "membership-approval-system",
+        "parent-portal"
+      ],
+      "endpoints": {
+        "http": [
+          "POST /api/coach/progress-reports",
+          "GET /api/coach/progress-reports",
+          "GET /api/athlete/progress-reports",
+          "GET /api/parent/athlete/:id/progress-reports"
+        ],
+        "openapi": "openapi/performance.yaml"
+      },
+      "events": {
+        "produces": [
+          "org.club.performance.report.published.v1"
+        ],
+        "consumes": []
+      },
+      "migrations": [
+        "90-create-progress-reports-system.sql"
+      ],
+      "database": {
+        "tables": [
+          "progress_reports"
+        ],
+        "functions": [],
+        "policies": [
+          "progress_reports: coaches_manage_club",
+          "progress_reports: athletes_view_own",
+          "progress_reports: parents_view_connected"
+        ]
+      },
+      "components": {
+        "frontend": [
+          "components/coach/CreateProgressReportDialog.tsx",
+          "components/athlete/ProgressReportsList.tsx",
+          "components/athlete/ProgressReportDetail.tsx",
+          "app/dashboard/coach/progress-reports/page.tsx"
+        ],
+        "backend": [
+          "lib/progress/actions.ts"
+        ]
+      },
+      "tests": []
+    }
+  }
+}
+,
+    "idempotency-system": {
+      "name": "Idempotency Support",
+      "category": "infrastructure",
+      "status": "production",
+      "owner": "Platform Team",
+      "description": "Idempotency key system to prevent duplicate operations on retry",
+      "requirements": [
+        "20.6", "20.7"
+      ],
+      "dependencies": [],
+      "endpoints": {
+        "http": [
+          "All mutation endpoints (POST/PUT/DELETE) accept Idempotency-Key header"
+        ],
+        "openapi": "All OpenAPI specs include idempotency header"
+      },
+      "events": {
+        "produces": [],
+        "consumes": []
+      },
+      "migrations": [
+        "104-create-idempotency-keys-table.sql"
+      ],
+      "database": {
+        "tables": [
+          "idempotency_keys"
+        ],
+        "functions": [],
+        "policies": []
+      },
+      "components": {
+        "frontend": [],
+        "backend": [
+          "lib/utils/idempotency.ts",
+          "lib/utils/idempotency-middleware.ts"
+        ]
+      },
+      "tests": [
+        "tests/idempotency.test.ts"
+      ]
+    },
+    "feature-flags": {
+      "name": "Feature Flag System",
+      "category": "infrastructure",
+      "status": "production",
+      "owner": "Platform Team",
+      "description": "Feature flag management with gradual rollout and kill-switch capability",
+      "requirements": [
+        "20.8", "20.9"
+      ],
+      "dependencies": [],
+      "endpoints": {
+        "http": [
+          "GET /api/admin/feature-flags",
+          "PUT /api/admin/feature-flags/:name"
+        ],
+        "openapi": "openapi/admin.yaml"
+      },
+      "events": {
+        "produces": [],
+        "consumes": []
+      },
+      "migrations": [
+        "105-create-feature-flags-table.sql"
+      ],
+      "database": {
+        "tables": [
+          "feature_flags"
+        ],
+        "functions": [],
+        "policies": [
+          "feature_flags: admins_full_access"
+        ]
+      },
+      "components": {
+        "frontend": [
+          "components/admin/FeatureFlagList.tsx",
+          "app/dashboard/admin/feature-flags/page.tsx"
+        ],
+        "backend": [
+          "lib/utils/feature-flags.ts"
+        ]
+      },
+      "tests": [
+        "tests/feature-flags.test.ts"
+      ]
+    },
+    "correlation-ids": {
+      "name": "Correlation and Causation IDs",
+      "category": "infrastructure",
+      "status": "production",
+      "owner": "Platform Team",
+      "description": "Request tracing with correlation and causation IDs for debugging and monitoring",
+      "requirements": [
+        "20.5"
+      ],
+      "dependencies": [],
+      "endpoints": {
+        "http": [
+          "All endpoints include X-Correlation-ID and X-Causation-ID headers"
+        ],
+        "openapi": "All OpenAPI specs include correlation headers"
+      },
+      "events": {
+        "produces": [],
+        "consumes": []
+      },
+      "migrations": [],
+      "database": {
+        "tables": [],
+        "functions": [],
+        "policies": []
+      },
+      "components": {
+        "frontend": [],
+        "backend": [
+          "lib/utils/correlation.ts",
+          "lib/utils/correlation-middleware.ts",
+          "lib/utils/logger.ts",
+          "lib/utils/api-context.ts"
+        ]
+      },
+      "tests": [
+        "tests/correlation-ids.test.ts"
+      ]
+    },
+    "error-monitoring": {
+      "name": "Error Logging and Monitoring",
+      "category": "infrastructure",
+      "status": "production",
+      "owner": "Platform Team",
+      "description": "Comprehensive error logging with stack traces, context, and admin dashboard",
+      "requirements": [
+        "14.1", "14.2", "14.3", "14.4", "14.5", "14.6", "14.7", "14.8", "14.9", "14.10"
+      ],
+      "dependencies": [
+        "correlation-ids"
+      ],
+      "endpoints": {
+        "http": [
+          "GET /api/admin/errors",
+          "PUT /api/admin/errors/:id/resolve"
+        ],
+        "openapi": "openapi/admin.yaml"
+      },
+      "events": {
+        "produces": [],
+        "consumes": []
+      },
+      "migrations": [
+        "60-create-error-logs-table.sql"
+      ],
+      "database": {
+        "tables": [
+          "error_logs"
+        ],
+        "functions": [],
+        "policies": [
+          "error_logs: admins_full_access"
+        ]
+      },
+      "components": {
+        "frontend": [
+          "app/dashboard/admin/monitoring/page.tsx"
+        ],
+        "backend": [
+          "lib/monitoring/error-logger.ts"
+        ]
+      },
+      "tests": []
+    },
+    "audit-logging": {
+      "name": "Audit Logging and Compliance",
+      "category": "infrastructure",
+      "status": "production",
+      "owner": "Platform Team",
+      "description": "Comprehensive audit trail of significant actions for compliance and investigation",
+      "requirements": [
+        "19.1", "19.2", "19.3", "19.4", "19.5", "19.6", "19.7", "19.8", "19.9", "19.10"
+      ],
+      "dependencies": [],
+      "endpoints": {
+        "http": [
+          "GET /api/admin/audit-logs"
+        ],
+        "openapi": "openapi/admin.yaml"
+      },
+      "events": {
+        "produces": [],
+        "consumes": [
+          "All significant events"
+        ]
+      },
+      "migrations": [
+        "01-schema-only.sql"
+      ],
+      "database": {
+        "tables": [
+          "audit_logs"
+        ],
+        "functions": [],
+        "policies": [
+          "audit_logs: admins_full_access"
+        ]
+      },
+      "components": {
+        "frontend": [
+          "app/dashboard/admin/audit/page.tsx"
+        ],
+        "backend": [
+          "lib/audit/actions.ts"
+        ]
+      },
+      "tests": [
+        "tests/audit-logging.property.test.ts"
+      ]
+    },
+    "validation-sanitization": {
+      "name": "Input Validation and Sanitization",
+      "category": "infrastructure",
+      "status": "production",
+      "owner": "Security Team",
+      "description": "Comprehensive input validation and sanitization to prevent security vulnerabilities",
+      "requirements": [
+        "15.1", "15.2", "15.3", "15.4", "15.5", "15.6", "15.7", "15.8", "15.9", "15.10"
+      ],
+      "dependencies": [],
+      "endpoints": {
+        "http": [
+          "All endpoints use validation middleware"
+        ],
+        "openapi": "All OpenAPI specs include validation schemas"
+      },
+      "events": {
+        "produces": [],
+        "consumes": []
+      },
+      "migrations": [],
+      "database": {
+        "tables": [],
+        "functions": [],
+        "policies": []
+      },
+      "components": {
+        "frontend": [],
+        "backend": [
+          "lib/utils/enhanced-validation.ts",
+          "lib/utils/sanitization.ts",
+          "lib/utils/api-validation.ts",
+          "lib/utils/file-validation.ts"
+        ]
+      },
+      "tests": [
+        "tests/enhanced-validation.test.ts",
+        "tests/sanitization.test.ts",
+        "tests/validation-error-specificity.property.test.ts",
+        "tests/thai-error-messages.property.test.ts"
+      ]
+    },
+    "rate-limiting": {
+      "name": "Rate Limiting and Abuse Prevention",
+      "category": "infrastructure",
+      "status": "production",
+      "owner": "Security Team",
+      "description": "Rate limiting on API endpoints to prevent abuse and protect system resources",
+      "requirements": [
+        "16.1", "16.2", "16.3", "16.4", "16.5", "16.6", "16.7", "16.8", "16.9", "16.10"
+      ],
+      "dependencies": [],
+      "endpoints": {
+        "http": [
+          "GET /api/admin/rate-limits",
+          "POST /api/admin/rate-limits/reset"
+        ],
+        "openapi": "openapi/admin.yaml"
+      },
+      "events": {
+        "produces": [],
+        "consumes": []
+      },
+      "migrations": [],
+      "database": {
+        "tables": [],
+        "functions": [],
+        "policies": []
+      },
+      "components": {
+        "frontend": [
+          "app/dashboard/admin/rate-limits/page.tsx"
+        ],
+        "backend": []
+      },
+      "tests": []
+    },
+    "storage-management": {
+      "name": "Storage and File Management",
+      "category": "infrastructure",
+      "status": "production",
+      "owner": "Platform Team",
+      "description": "Secure file storage with RLS policies for documents, images, and media",
+      "requirements": [
+        "18.1", "18.2", "18.3", "18.4", "18.5", "18.6", "18.7", "18.8", "18.9", "18.10"
+      ],
+      "dependencies": [
+        "auth-database-integration"
+      ],
+      "endpoints": {
+        "http": [
+          "POST /api/upload/:bucket",
+          "DELETE /api/upload/:bucket/:file"
+        ],
+        "openapi": "openapi/admin.yaml"
+      },
+      "events": {
+        "produces": [],
+        "consumes": []
+      },
+      "migrations": [
+        "41-create-membership-documents-bucket.sql",
+        "62-create-profile-pictures-bucket.sql",
+        "101-create-home-training-storage.sql"
+      ],
+      "database": {
+        "tables": [],
+        "functions": [],
+        "policies": [],
+        "storage": [
+          "membership-documents",
+          "profile-pictures",
+          "home-training-media"
+        ]
+      },
+      "components": {
+        "frontend": [
+          "components/membership/DocumentUpload.tsx",
+          "components/athlete/ProfilePictureUpload.tsx"
+        ],
+        "backend": [
+          "lib/membership/storage.ts"
+        ]
+      },
+      "tests": []
+    },
+    "database-migrations": {
+      "name": "Database Migration Management",
+      "category": "infrastructure",
+      "status": "production",
+      "owner": "Platform Team",
+      "description": "Automated database migration system with rollback capability",
+      "requirements": [
+        "17.1", "17.2", "17.3", "17.4", "17.5", "17.6", "17.7", "17.8", "17.9", "17.10"
+      ],
+      "dependencies": [],
+      "endpoints": {
+        "http": [],
+        "openapi": ""
+      },
+      "events": {
+        "produces": [],
+        "consumes": []
+      },
+      "migrations": [
+        "All 42 production migrations (01-105)"
+      ],
+      "database": {
+        "tables": [],
+        "functions": [],
+        "policies": []
+      },
+      "components": {
+        "frontend": [],
+        "backend": [
+          "scripts/auto-migrate.sh",
+          "scripts/run-sql-via-api.sh",
+          "scripts/test-rollback.sh"
+        ]
+      },
+      "tests": []
+    },
+    "admin-management": {
+      "name": "Admin Management Dashboard",
+      "category": "admin",
+      "status": "production",
+      "owner": "Admin Team",
+      "description": "Comprehensive admin dashboard for system management, user management, and oversight",
+      "requirements": [
+        "Multiple requirements across all features"
+      ],
+      "dependencies": [
+        "auth-database-integration",
+        "error-monitoring",
+        "audit-logging",
+        "feature-flags",
+        "rate-limiting"
+      ],
+      "endpoints": {
+        "http": [
+          "GET /api/admin/users",
+          "POST /api/admin/create-user",
+          "PUT /api/admin/users/:id",
+          "DELETE /api/admin/users/:id",
+          "GET /api/admin/clubs",
+          "POST /api/admin/clubs",
+          "PUT /api/admin/clubs/:id",
+          "DELETE /api/admin/clubs/:id",
+          "GET /api/admin/statistics"
+        ],
+        "openapi": "openapi/admin.yaml"
+      },
+      "events": {
+        "produces": [],
+        "consumes": [
+          "All system events"
+        ]
+      },
+      "migrations": [],
+      "database": {
+        "tables": [
+          "All tables (admin has full access)"
+        ],
+        "functions": [
+          "All RLS helper functions"
+        ],
+        "policies": [
+          "All tables: admins_full_access"
+        ]
+      },
+      "components": {
+        "frontend": [
+          "components/admin/AdminSidebar.tsx",
+          "components/admin/StatCard.tsx",
+          "components/admin/ClubsTable.tsx",
+          "components/admin/CoachesTable.tsx",
+          "components/admin/SessionsTable.tsx",
+          "components/admin/AttendanceOverview.tsx",
+          "components/admin/ClubStatsTable.tsx",
+          "components/admin/LoginSessionsTable.tsx",
+          "components/admin/CreateClubDialog.tsx",
+          "components/admin/EditClubDialog.tsx",
+          "components/admin/DeleteClubDialog.tsx",
+          "components/admin/AssignCoachDialog.tsx",
+          "components/admin/DeleteUserDialog.tsx",
+          "components/admin/DateRangeFilter.tsx",
+          "app/dashboard/admin/page.tsx",
+          "app/dashboard/admin/attendance/page.tsx",
+          "app/dashboard/admin/devices/page.tsx",
+          "app/dashboard/admin/settings/page.tsx",
+          "app/dashboard/admin/reports/page.tsx",
+          "app/dashboard/admin/create-user/page.tsx"
+        ],
+        "backend": [
+          "lib/admin/attendance-actions.ts",
+          "lib/admin/settings-actions.ts"
+        ]
+      },
+      "tests": [
+        "tests/admin-full-access.property.test.ts",
+        "tests/admin-session-management.test.ts",
+        "tests/club-operations.property.test.ts",
+        "tests/dashboard-statistics.property.test.ts"
+      ]
+    },
+    "coach-goals-feedback": {
+      "name": "Coach Goals and Feedback",
+      "category": "advanced",
+      "status": "production",
+      "owner": "Performance Team",
+      "description": "Goal setting and feedback system for coach-athlete relationship management",
+      "requirements": [
+        "Related to performance tracking and progress reports"
+      ],
+      "dependencies": [
+        "auth-database-integration",
+        "membership-approval-system"
+      ],
+      "endpoints": {
+        "http": [
+          "POST /api/coach/goals",
+          "GET /api/coach/goals/:athleteId",
+          "PUT /api/coach/goals/:id",
+          "POST /api/coach/feedback"
+        ],
+        "openapi": "openapi/performance.yaml"
+      },
+      "events": {
+        "produces": [],
+        "consumes": []
+      },
+      "migrations": [
+        "61-add-feedback-and-goals.sql"
+      ],
+      "database": {
+        "tables": [
+          "athlete_goals"
+        ],
+        "functions": [],
+        "policies": [
+          "athlete_goals: coaches_manage_club",
+          "athlete_goals: athletes_view_own"
+        ]
+      },
+      "components": {
+        "frontend": [
+          "components/coach/CreateGoalDialog.tsx",
+          "components/coach/AthleteGoalsList.tsx",
+          "components/coach/GiveFeedbackDialog.tsx",
+          "components/athlete/GoalsWidget.tsx",
+          "app/dashboard/coach/athletes/[id]/page.tsx",
+          "app/dashboard/athlete/goals/page.tsx"
+        ],
+        "backend": [
+          "lib/coach/goal-actions.ts",
+          "lib/coach/feedback-actions.ts"
+        ]
+      },
+      "tests": []
+    }
+  }
+}

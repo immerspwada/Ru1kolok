@@ -13,6 +13,17 @@ interface CoachProfile {
   last_name: string;
 }
 
+interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  is_pinned: boolean;
+  created_at: string;
+  updated_at: string;
+  [key: string]: any;
+}
+
 export default async function CoachAnnouncementsPage() {
   const supabase = await createClient();
 
@@ -39,9 +50,30 @@ export default async function CoachAnnouncementsPage() {
   const { data: announcements } = await supabase
     .from('announcements')
     .select('*')
-    .eq('coach_id', (coach as any).id)
+    .eq('coach_id', coach.id)
     .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false });
+
+  // Get read counts for each announcement
+  const announcementsWithReads = await Promise.all(
+    (announcements || []).map(async (announcement: Announcement) => {
+      const { count } = await supabase
+        .from('announcement_reads')
+        .select('*', { count: 'exact', head: true })
+        .eq('announcement_id', announcement.id);
+      
+      return {
+        ...announcement,
+        read_count: count || 0,
+      };
+    })
+  );
+
+  // Get total athletes count in the club
+  const { count: totalAthletes } = await supabase
+    .from('athletes')
+    .select('*', { count: 'exact', head: true })
+    .eq('club_id', coach.club_id || '');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -68,9 +100,34 @@ export default async function CoachAnnouncementsPage() {
         </div>
       </div>
 
+      {/* Stats Summary */}
+      {announcementsWithReads && announcementsWithReads.length > 0 && (
+        <div className="px-4 pt-4">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-white rounded-xl p-3 border border-gray-100">
+              <p className="text-xs text-gray-500 mb-1">ทั้งหมด</p>
+              <p className="text-2xl font-bold text-black">{announcementsWithReads.length}</p>
+            </div>
+            <div className="bg-white rounded-xl p-3 border border-gray-100">
+              <p className="text-xs text-gray-500 mb-1">ปักหมุด</p>
+              <p className="text-2xl font-bold text-black">
+                {announcementsWithReads.filter((a: any) => a.is_pinned).length}
+              </p>
+            </div>
+            <div className="bg-white rounded-xl p-3 border border-gray-100">
+              <p className="text-xs text-gray-500 mb-1">นักกีฬา</p>
+              <p className="text-2xl font-bold text-black">{totalAthletes || 0}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       <div className="px-4 py-6">
-        <AnnouncementList announcements={announcements || []} />
+        <AnnouncementList 
+          announcements={announcementsWithReads || []} 
+          totalAthletes={totalAthletes || 0}
+        />
       </div>
 
       {/* Bottom spacing for navigation */}

@@ -2,6 +2,17 @@
 -- PART 1: Schema, Tables, and Indexes (NO auth schema functions)
 -- Run this in Supabase Dashboard SQL Editor
 -- ============================================================================
+-- 
+-- Migration: 01-schema-only.sql
+-- Description: Creates core database schema including tables, indexes, and triggers
+-- 
+-- UP: Creates all tables, indexes, and triggers
+-- DOWN: Drops all tables, indexes, triggers, and types in reverse order
+-- ============================================================================
+
+-- ============================================================================
+-- UP MIGRATION
+-- ============================================================================
 
 -- Create custom enum types
 CREATE TYPE user_role AS ENUM ('admin', 'coach', 'athlete');
@@ -247,3 +258,71 @@ CREATE TRIGGER update_attendance_updated_at BEFORE UPDATE ON attendance
 
 CREATE TRIGGER update_announcements_updated_at BEFORE UPDATE ON announcements
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+
+-- ============================================================================
+-- DOWN MIGRATION
+-- ============================================================================
+-- Uncomment and run this section to rollback the migration
+
+/*
+
+-- Drop triggers
+DROP TRIGGER IF EXISTS update_announcements_updated_at ON announcements;
+DROP TRIGGER IF EXISTS update_attendance_updated_at ON attendance;
+DROP TRIGGER IF EXISTS update_training_sessions_updated_at ON training_sessions;
+DROP TRIGGER IF EXISTS update_teams_updated_at ON teams;
+DROP TRIGGER IF EXISTS update_sports_updated_at ON sports;
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
+DROP TRIGGER IF EXISTS update_clubs_updated_at ON clubs;
+DROP TRIGGER IF EXISTS update_user_roles_updated_at ON user_roles;
+
+-- Drop trigger function
+DROP FUNCTION IF EXISTS update_updated_at_column();
+
+-- Drop indexes (in reverse order of creation)
+DROP INDEX IF EXISTS idx_audit_logs_created_at;
+DROP INDEX IF EXISTS idx_audit_logs_table_name;
+DROP INDEX IF EXISTS idx_audit_logs_user_id;
+DROP INDEX IF EXISTS idx_announcements_created_by;
+DROP INDEX IF EXISTS idx_announcements_published_at;
+DROP INDEX IF EXISTS idx_announcements_target_team_id;
+DROP INDEX IF EXISTS idx_announcements_target_role;
+DROP INDEX IF EXISTS idx_performance_metrics_recorded_at;
+DROP INDEX IF EXISTS idx_performance_metrics_session_id;
+DROP INDEX IF EXISTS idx_performance_metrics_athlete_id;
+DROP INDEX IF EXISTS idx_attendance_status;
+DROP INDEX IF EXISTS idx_attendance_athlete_id;
+DROP INDEX IF EXISTS idx_attendance_session_id;
+DROP INDEX IF EXISTS idx_training_sessions_created_by;
+DROP INDEX IF EXISTS idx_training_sessions_scheduled_at;
+DROP INDEX IF EXISTS idx_training_sessions_team_id;
+DROP INDEX IF EXISTS idx_team_members_athlete_id;
+DROP INDEX IF EXISTS idx_team_members_team_id;
+DROP INDEX IF EXISTS idx_teams_coach_id;
+DROP INDEX IF EXISTS idx_teams_club_id;
+DROP INDEX IF EXISTS idx_teams_sport_id;
+DROP INDEX IF EXISTS idx_profiles_email;
+DROP INDEX IF EXISTS idx_profiles_club_id;
+DROP INDEX IF EXISTS idx_user_roles_role;
+
+-- Drop tables (in reverse order of dependencies)
+DROP TABLE IF EXISTS audit_logs CASCADE;
+DROP TABLE IF EXISTS announcements CASCADE;
+DROP TABLE IF EXISTS performance_metrics CASCADE;
+DROP TABLE IF EXISTS attendance CASCADE;
+DROP TABLE IF EXISTS training_sessions CASCADE;
+DROP TABLE IF EXISTS team_members CASCADE;
+DROP TABLE IF EXISTS teams CASCADE;
+DROP TABLE IF EXISTS sports CASCADE;
+DROP TABLE IF EXISTS profiles CASCADE;
+DROP TABLE IF EXISTS clubs CASCADE;
+DROP TABLE IF EXISTS user_roles CASCADE;
+
+-- Drop custom types
+DROP TYPE IF EXISTS announcement_priority;
+DROP TYPE IF EXISTS check_in_method;
+DROP TYPE IF EXISTS attendance_status;
+DROP TYPE IF EXISTS user_role;
+
+*/

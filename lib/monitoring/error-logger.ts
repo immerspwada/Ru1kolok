@@ -29,7 +29,7 @@ export async function logError(params: LogErrorParams) {
     const { data: { user } } = await supabase.auth.getUser();
     
     // บันทึก error log
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('error_logs')
       .insert({
         user_id: user?.id || null,
@@ -63,7 +63,7 @@ export async function logRegistrationStep(
   try {
     const supabase = await createClient();
     
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('registration_audit')
       .insert({
         user_id: userId || null,
@@ -87,11 +87,11 @@ export async function logRegistrationStep(
 export async function getCommonErrors(hours: number = 24) {
   const supabase = await createClient();
   
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('error_logs')
     .select('error_type, error_code, error_message')
     .gte('created_at', new Date(Date.now() - hours * 60 * 60 * 1000).toISOString())
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false});
   
   if (error) {
     console.error('Failed to get common errors:', error);
@@ -99,7 +99,7 @@ export async function getCommonErrors(hours: number = 24) {
   }
   
   // นับจำนวนแต่ละ error
-  const errorCounts = data.reduce((acc, err) => {
+  const errorCounts = (data || []).reduce((acc: any, err: any) => {
     const key = `${err.error_type}:${err.error_code}`;
     if (!acc[key]) {
       acc[key] = {

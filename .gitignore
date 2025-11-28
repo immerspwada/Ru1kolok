@@ -46,3 +46,13 @@ next-env.d.ts
 
 # vitest
 .vitest
+
+# pact contract testing
+/tests/contracts/logs
+/tests/contracts/pacts/*.json
+
+# PWA files
+/public/sw.js
+/public/sw.js.map
+/public/workbox-*.js
+/public/workbox-*.js.map

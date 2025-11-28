@@ -108,6 +108,36 @@ export async function updateAnnouncement(input: UpdateAnnouncementInput) {
 
   const { id, ...updates } = input;
 
+  // Validate if provided
+  if (updates.title !== undefined) {
+    const titleError = validateRequired(updates.title, 'หัวข้อประกาศ') || 
+                       validateLength(updates.title, 3, 200, 'หัวข้อประกาศ');
+    if (titleError) {
+      return { success: false, error: titleError.message };
+    }
+    updates.title = sanitizeInput(updates.title);
+  }
+
+  if (updates.message !== undefined) {
+    const messageError = validateRequired(updates.message, 'รายละเอียด') || 
+                         validateLength(updates.message, 10, 5000, 'รายละเอียด');
+    if (messageError) {
+      return { success: false, error: messageError.message };
+    }
+    updates.message = sanitizeHtml(updates.message);
+  }
+
+  if (updates.priority !== undefined) {
+    const priorityError = validateEnum(
+      updates.priority,
+      ['low', 'normal', 'high', 'urgent'],
+      'ระดับความสำคัญ'
+    );
+    if (priorityError) {
+      return { success: false, error: priorityError.message };
+    }
+  }
+
   const { data, error } = await (supabase as any)
     .from('announcements')
     .update(updates)

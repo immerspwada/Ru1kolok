@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "org.club.membership.application.approved.v1",
+  "title": "Membership Application Approved Event",
+  "description": "Published when a coach approves a membership application",
+  "type": "object",
+  "required": ["eventId", "eventType", "timestamp", "data"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this event instance"
+    },
+    "eventType": {
+      "type": "string",
+      "const": "org.club.membership.application.approved.v1",
+      "description": "Event type identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the event occurred"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Correlation ID linking related operations"
+    },
+    "causationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Causation ID of the operation that triggered this event"
+    },
+    "data": {
+      "type": "object",
+      "required": ["applicationId", "athleteId", "clubId", "coachId", "approvedAt"],
+      "properties": {
+        "applicationId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the membership application"
+        },
+        "athleteId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User ID of the athlete whose application was approved"
+        },
+        "clubId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Club the athlete was approved to join"
+        },
+        "coachId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Coach who approved the application and will be assigned to the athlete"
+        },
+        "approvedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when application was approved"
+        },
+        "reviewedBy": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User ID of the person who reviewed (may be different from assigned coach)"
+        },
+        "membershipStatus": {
+          "type": "string",
+          "const": "active",
+          "description": "New membership status after approval"
+        }
+      }
+    }
+  }
+}

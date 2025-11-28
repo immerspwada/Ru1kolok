@@ -37,3 +37,25 @@ CREATE INDEX IF NOT EXISTS idx_training_sessions_status ON training_sessions(sta
 COMMENT ON COLUMN training_sessions.coach_id IS 'Coach responsible for this training session';
 COMMENT ON COLUMN training_sessions.max_participants IS 'Maximum number of participants allowed (NULL = unlimited)';
 COMMENT ON COLUMN training_sessions.status IS 'Session status: scheduled, ongoing, completed, cancelled';
+
+
+-- ============================================================================
+-- DOWN MIGRATION
+-- ============================================================================
+-- Uncomment and run this section to rollback the migration
+
+/*
+
+-- Remove indexes
+DROP INDEX IF EXISTS idx_training_sessions_status;
+DROP INDEX IF EXISTS idx_training_sessions_coach_id;
+
+-- Remove constraint
+ALTER TABLE training_sessions DROP CONSTRAINT IF EXISTS training_sessions_status_check;
+
+-- Remove columns
+ALTER TABLE training_sessions DROP COLUMN IF EXISTS status;
+ALTER TABLE training_sessions DROP COLUMN IF EXISTS max_participants;
+ALTER TABLE training_sessions DROP COLUMN IF EXISTS coach_id;
+
+*/

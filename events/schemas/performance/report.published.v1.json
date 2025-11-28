@@ -1,0 +1,105 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "org.club.performance.report.published.v1",
+  "title": "Progress Report Published Event",
+  "description": "Published when a coach creates a formal progress report for an athlete",
+  "type": "object",
+  "required": ["eventId", "eventType", "timestamp", "data"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this event instance"
+    },
+    "eventType": {
+      "type": "string",
+      "const": "org.club.performance.report.published.v1",
+      "description": "Event type identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the event occurred"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Correlation ID linking related operations"
+    },
+    "causationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Causation ID of the operation that triggered this event"
+    },
+    "data": {
+      "type": "object",
+      "required": ["reportId", "athleteId", "coachId", "reportDate", "overallRating"],
+      "properties": {
+        "reportId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the progress report"
+        },
+        "athleteId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Athlete the report is about"
+        },
+        "coachId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Coach who created the report"
+        },
+        "clubId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Club the athlete belongs to"
+        },
+        "reportDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Date of the progress report"
+        },
+        "overallRating": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "Overall rating from 1-5"
+        },
+        "strengths": {
+          "type": "string",
+          "description": "Athlete's strengths identified by coach"
+        },
+        "areasForImprovement": {
+          "type": "string",
+          "description": "Areas where athlete can improve"
+        },
+        "recommendations": {
+          "type": "string",
+          "description": "Coach's recommendations for the athlete"
+        },
+        "goals": {
+          "type": ["string", "null"],
+          "description": "Optional goals set for the athlete"
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the report was published"
+        },
+        "notifyParents": {
+          "type": "boolean",
+          "description": "Whether connected parents should be notified"
+        },
+        "parentIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": "List of parent IDs who will be notified"
+        }
+      }
+    }
+  }
+}

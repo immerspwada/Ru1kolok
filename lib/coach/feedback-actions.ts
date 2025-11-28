@@ -21,7 +21,7 @@ export async function addAttendanceFeedback(
   }
 
   // Get coach profile
-  const { data: coach } = await supabase
+  const { data: coach } = await (supabase as any)
     .from('coaches')
     .select('id, club_id')
     .eq('user_id', user.id)
@@ -32,8 +32,8 @@ export async function addAttendanceFeedback(
   }
 
   // Update attendance log with feedback
-  const { error } = await supabase
-    .from('attendance_logs')
+  const { error } = await (supabase as any)
+    .from('attendance')
     .update({ coach_feedback: feedback })
     .eq('id', attendanceLogId);
 
@@ -66,7 +66,7 @@ export async function addPerformanceNotes(
   }
 
   // Get coach profile
-  const { data: coach } = await supabase
+  const { data: coach } = await (supabase as any)
     .from('coaches')
     .select('id, club_id')
     .eq('user_id', user.id)
@@ -77,7 +77,7 @@ export async function addPerformanceNotes(
   }
 
   // Update performance record with notes
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('performance_records')
     .update({ coach_notes: notes })
     .eq('id', performanceRecordId)

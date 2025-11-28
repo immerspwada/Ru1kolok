@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "org.club.training.session.updated.v1",
+  "title": "Training Session Updated Event",
+  "description": "Published when a coach modifies an existing training session",
+  "type": "object",
+  "required": ["eventId", "eventType", "timestamp", "data"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this event instance"
+    },
+    "eventType": {
+      "type": "string",
+      "const": "org.club.training.session.updated.v1",
+      "description": "Event type identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the event occurred"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Correlation ID linking related operations"
+    },
+    "causationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Causation ID of the operation that triggered this event"
+    },
+    "data": {
+      "type": "object",
+      "required": ["sessionId", "clubId", "coachId", "updatedAt", "changes"],
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the training session"
+        },
+        "clubId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Club the session belongs to"
+        },
+        "coachId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Coach who updated the session"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the session was updated"
+        },
+        "changes": {
+          "type": "object",
+          "description": "Fields that were changed with before/after values",
+          "properties": {
+            "title": {
+              "type": "object",
+              "properties": {
+                "before": { "type": "string" },
+                "after": { "type": "string" }
+              }
+            },
+            "scheduledAt": {
+              "type": "object",
+              "properties": {
+                "before": { "type": "string", "format": "date-time" },
+                "after": { "type": "string", "format": "date-time" }
+              }
+            },
+            "location": {
+              "type": "object",
+              "properties": {
+                "before": { "type": "string" },
+                "after": { "type": "string" }
+              }
+            },
+            "status": {
+              "type": "object",
+              "properties": {
+                "before": { "type": "string" },
+                "after": { "type": "string" }
+              }
+            }
+          }
+        },
+        "notifyAthletes": {
+          "type": "boolean",
+          "description": "Whether athletes should be notified of the changes"
+        }
+      }
+    }
+  }
+}

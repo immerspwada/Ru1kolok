@@ -65,7 +65,7 @@ export default async function AthleteProfilePage() {
 
   // Get training history count
   const { count: trainingCount } = await supabase
-    .from('attendance_logs')
+    .from('attendance')
     .select('*', { count: 'exact', head: true })
     .eq('athlete_id', athleteId)
     .eq('status', 'present');

@@ -2,6 +2,19 @@
 -- PART 3: Setup Test Data (Clubs, User Roles, Profiles)
 -- Run this AFTER creating test users
 -- ============================================================================
+-- 
+-- Migration: 03-setup-test-data.sql
+-- Description: Creates test data including clubs, user roles, profiles, sports, and teams
+-- 
+-- UP: Inserts test data for development and testing
+-- DOWN: Deletes all test data
+-- 
+-- WARNING: DOWN migration will delete test users' data. Use with caution.
+-- ============================================================================
+
+-- ============================================================================
+-- UP MIGRATION
+-- ============================================================================
 
 -- ============================================================================
 -- CREATE DEFAULT CLUB
@@ -147,3 +160,56 @@ LEFT JOIN profiles p ON p.id = u.id
 LEFT JOIN clubs c ON c.id = p.club_id
 WHERE u.email IN ('admin@test.com', 'coach@test.com', 'athlete@test.com')
 ORDER BY ur.role;
+
+
+-- ============================================================================
+-- DOWN MIGRATION
+-- ============================================================================
+-- Uncomment and run this section to rollback the migration
+-- WARNING: This will delete test data. Use with caution.
+
+/*
+
+-- Remove athlete from team
+DELETE FROM team_members 
+WHERE team_id = '00000000-0000-0000-0000-000000000001'
+AND athlete_id IN (
+  SELECT id FROM auth.users WHERE email = 'athlete@test.com'
+);
+
+-- Delete sample team
+DELETE FROM teams WHERE id = '00000000-0000-0000-0000-000000000001';
+
+-- Delete sample sports
+DELETE FROM sports WHERE id IN (
+  '00000000-0000-0000-0000-000000000001',
+  '00000000-0000-0000-0000-000000000002',
+  '00000000-0000-0000-0000-000000000003'
+);
+
+-- Delete test user profiles
+DELETE FROM profiles WHERE id IN (
+  SELECT id FROM auth.users WHERE email IN (
+    'admin@test.com',
+    'coach@test.com',
+    'athlete@test.com'
+  )
+);
+
+-- Delete test user roles
+DELETE FROM user_roles WHERE user_id IN (
+  SELECT id FROM auth.users WHERE email IN (
+    'admin@test.com',
+    'coach@test.com',
+    'athlete@test.com'
+  )
+);
+
+-- Delete default club
+DELETE FROM clubs WHERE id = '00000000-0000-0000-0000-000000000001';
+
+-- Note: This does NOT delete the auth.users records themselves
+-- To fully remove test users, you must delete them from Supabase Auth dashboard
+-- or use the Supabase Admin API
+
+*/

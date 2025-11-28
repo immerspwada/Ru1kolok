@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "org.club.performance.record.created.v1",
+  "title": "Performance Record Created Event",
+  "description": "Published when a coach records a performance test result for an athlete",
+  "type": "object",
+  "required": ["eventId", "eventType", "timestamp", "data"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this event instance"
+    },
+    "eventType": {
+      "type": "string",
+      "const": "org.club.performance.record.created.v1",
+      "description": "Event type identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the event occurred"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Correlation ID linking related operations"
+    },
+    "causationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Causation ID of the operation that triggered this event"
+    },
+    "data": {
+      "type": "object",
+      "required": ["recordId", "athleteId", "coachId", "testType", "testName", "score", "testDate"],
+      "properties": {
+        "recordId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the performance record"
+        },
+        "athleteId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Athlete whose performance was recorded"
+        },
+        "coachId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Coach who recorded the performance"
+        },
+        "clubId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Club the athlete belongs to"
+        },
+        "testType": {
+          "type": "string",
+          "description": "Category of the test (e.g., speed, strength, endurance)"
+        },
+        "testName": {
+          "type": "string",
+          "description": "Specific name of the test (e.g., 100m sprint, bench press)"
+        },
+        "score": {
+          "type": "number",
+          "description": "Numeric score/result of the test"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit of measurement (e.g., seconds, kg, meters)"
+        },
+        "testDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Date when the test was performed"
+        },
+        "notes": {
+          "type": ["string", "null"],
+          "description": "Optional notes about the performance"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the record was created"
+        },
+        "previousBest": {
+          "type": ["number", "null"],
+          "description": "Athlete's previous best score for this test type"
+        },
+        "isPersonalBest": {
+          "type": "boolean",
+          "description": "Whether this is a new personal best"
+        }
+      }
+    }
+  }
+}

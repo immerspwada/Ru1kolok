@@ -1,110 +1,123 @@
-# Sports Club Management System - Documentation
+# Documentation Index
 
-This directory contains comprehensive documentation for the Sports Club Management System.
+Complete documentation for the Sports Club Management System.
 
-## Core Documentation
+## 📚 Getting Started
 
-### [Membership Approval System](./MEMBERSHIP_APPROVAL_SYSTEM.md) 🆕
-Complete guide to the membership approval workflow including:
-- System architecture and flow diagrams
-- Database schema and RLS policies
-- API functions and examples
-- UI components and user guides
-- Troubleshooting and migration guides
+- **[Main README](../README.md)** - Project overview and quick start guide
+- **[Feature Registry](../FEATURE_REGISTRY.md)** - Comprehensive feature catalog with dependencies, endpoints, and events
+- **[Database Setup](DATABASE.md)** - Database configuration and migrations
+- **[Testing Guide](TESTING.md)** - Testing procedures and test accounts
+- **[Deployment Guide](DEPLOYMENT.md)** - Production deployment instructions
 
-### [Membership Registration Guide](./MEMBERSHIP_REGISTRATION_GUIDE.md)
-Detailed guide for the membership registration process.
+## 🎯 Core Features
 
-### [Membership Technical Documentation](./MEMBERSHIP_TECHNICAL_DOCS.md)
-Technical specifications and implementation details for the membership system.
+### Membership System
+- **[Membership Approval System](MEMBERSHIP_APPROVAL_SYSTEM.md)** - Complete membership workflow
+- **[Membership Troubleshooting](MEMBERSHIP_TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Membership Helper Functions](MEMBERSHIP_HELPER_FUNCTIONS.md)** - Database functions
 
-### [Membership Helper Functions](./MEMBERSHIP_HELPER_FUNCTIONS.md)
-Documentation for database helper functions used in the membership system.
+### Training & Attendance
+- **[Training Attendance Index Reference](TRAINING_ATTENDANCE_INDEX_REFERENCE.md)** - Database indexes
+- **[Leave Requests RLS Policies](LEAVE_REQUESTS_RLS_POLICIES.md)** - Security policies
 
-## Access Control & Security
+### Communication
+- **[Announcement System](ANNOUNCEMENT_SYSTEM.md)** - Club announcements
+- **[Athlete Notifications & Leave System](ATHLETE_NOTIFICATIONS_LEAVE_SYSTEM.md)** - Notification system
 
-### [Athlete Access Restrictions](./ATHLETE_ACCESS_RESTRICTIONS.md)
-Details on how athlete access is controlled based on membership status.
+### Performance Tracking
+- **[Coach-Athlete Relationship Features](COACH_ATHLETE_RELATIONSHIP_FEATURES.md)** - Goals and feedback
+- **[Progress Reports System](PROGRESS_REPORTS_SYSTEM.md)** - Performance reports
 
-### [Leave Requests RLS Policies](./LEAVE_REQUESTS_RLS_POLICIES.md)
-Row-Level Security policies for the leave requests feature.
+### Parent Features
+- **[Parent Dashboard System](PARENT_DASHBOARD_SYSTEM.md)** - Parent portal
+- **[Parent Notification System](PARENT_NOTIFICATION_SYSTEM.md)** - Parent notifications
+- **[Home Training System](HOME_TRAINING_SYSTEM.md)** - Home training logs
 
-## Performance & Optimization
+### Additional Features
+- **[Activity Check-in System](ACTIVITY_CHECKIN_SYSTEM.md)** - QR code check-ins
+- **[Storage Bucket Setup](STORAGE_BUCKET_SETUP.md)** - File upload configuration
 
-### [Index Optimization Report](./INDEX_OPTIMIZATION_REPORT.md)
-Database index analysis and optimization recommendations.
+## 🔧 Technical Documentation
 
-### [Training Attendance Index Reference](./TRAINING_ATTENDANCE_INDEX_REFERENCE.md)
-Index specifications for the training attendance system.
+### Security & Access Control
+- **[Access Control Implementation](ACCESS_CONTROL_IMPLEMENTATION.md)** - Security model
+- **[Access Control Review](ACCESS_CONTROL_REVIEW.md)** - Security audit
+- **[Middleware Review](MIDDLEWARE_REVIEW.md)** - Authentication middleware
+- **[Athlete Access Restrictions](ATHLETE_ACCESS_RESTRICTIONS.md)** - Role-based access
 
-## Quick Links
+### Database
+- **[Auth Database Schema Verification](AUTH_DATABASE_SCHEMA_VERIFICATION.md)** - Schema validation
+- **[Index Optimization Report](INDEX_OPTIMIZATION_REPORT.md)** - Performance optimization
+- **[Migration Execution Report](MIGRATION_EXECUTION_REPORT.md)** - Migration history
+- **[Migration 40 Report](MIGRATION_40_REPORT.md)** - Constraint additions
 
-### For New Users
-1. Start with [Membership Approval System](./MEMBERSHIP_APPROVAL_SYSTEM.md)
-2. Review user guides for your role (athlete/coach/admin)
-3. Check troubleshooting section if you encounter issues
+### Validation & Security
+- **[Input Validation & Sanitization](INPUT_VALIDATION_SANITIZATION.md)** - Data validation
+
+### System Infrastructure
+- **[Idempotency System](IDEMPOTENCY_SYSTEM.md)** - Duplicate request prevention
+- **[Feature Flags](FEATURE_FLAGS.md)** - Feature flag system
+- **[Feature Flags Implementation](FEATURE_FLAGS_IMPLEMENTATION.md)** - Implementation guide
+- **[Correlation IDs](CORRELATION_IDS.md)** - Request tracing and logging
+- **[Correlation IDs Implementation](CORRELATION_IDS_IMPLEMENTATION.md)** - Implementation summary
+
+### Admin Features
+- **[Admin Create User Feature](ADMIN_CREATE_USER_FEATURE.md)** - User creation
+- **[Admin Rate Limit Management](ADMIN_RATE_LIMIT_MANAGEMENT.md)** - Rate limiting
+- **[Admin Help Rate Limited Users](ADMIN_HELP_RATE_LIMITED_USERS.md)** - Support guide
+- **[Rate Limit User Guide](RATE_LIMIT_USER_GUIDE.md)** - User guide
+- **[User Monitoring Guide](USER_MONITORING_GUIDE.md)** - System monitoring
+
+### Testing & Quality
+- **[Production Signup Testing](PRODUCTION_SIGNUP_TESTING.md)** - Registration testing
+- **[Registration Production Guide](REGISTRATION_PRODUCTION_GUIDE.md)** - Production setup
+
+### Improvements
+- **[Coach Sessions Improvements](COACH_SESSIONS_IMPROVEMENTS.md)** - Session management
+- **[Coach Announcements Improvements](COACH_ANNOUNCEMENTS_IMPROVEMENTS.md)** - Announcement features
+
+## 📊 Reports & Diagnostics
+
+- **[Membership Diagnostic Report](MEMBERSHIP_DIAGNOSTIC_REPORT.md)** - Data consistency analysis
+
+## 📁 Archive
+
+Historical documentation and implementation notes are stored in:
+- **[Archive Documentation](archive/)** - Old summaries and reports
+
+## 🔍 Quick Reference
 
 ### For Developers
-1. Review [Membership Technical Documentation](./MEMBERSHIP_TECHNICAL_DOCS.md)
-2. Check [Membership Helper Functions](./MEMBERSHIP_HELPER_FUNCTIONS.md)
-3. Review RLS policies in respective documents
-4. See [Index Optimization Report](./INDEX_OPTIMIZATION_REPORT.md) for performance
+1. Start with [Main README](../README.md)
+2. Review [Database Setup](DATABASE.md)
+3. Check [Access Control Implementation](ACCESS_CONTROL_IMPLEMENTATION.md)
+4. Read [Testing Guide](TESTING.md)
 
-### For Administrators
-1. Read [Membership Approval System](./MEMBERSHIP_APPROVAL_SYSTEM.md) - Admin section
-2. Review [Athlete Access Restrictions](./ATHLETE_ACCESS_RESTRICTIONS.md)
-3. Check migration guides for deployment
+### For System Administrators
+1. Review [Deployment Guide](DEPLOYMENT.md)
+2. Check [Database Setup](DATABASE.md)
+3. Read [User Monitoring Guide](USER_MONITORING_GUIDE.md)
+4. Keep [Membership Troubleshooting](MEMBERSHIP_TROUBLESHOOTING.md) handy
 
-## Documentation Structure
+### For End Users
+1. Start with [Main README](../README.md)
+2. Review [Membership Approval System](MEMBERSHIP_APPROVAL_SYSTEM.md)
+3. Check [Membership Troubleshooting](MEMBERSHIP_TROUBLESHOOTING.md)
 
-```
-docs/
-├── README.md (this file)
-├── MEMBERSHIP_APPROVAL_SYSTEM.md       # Main approval workflow
-├── MEMBERSHIP_REGISTRATION_GUIDE.md    # Registration process
-├── MEMBERSHIP_TECHNICAL_DOCS.md        # Technical specs
-├── MEMBERSHIP_HELPER_FUNCTIONS.md      # Database functions
-├── ATHLETE_ACCESS_RESTRICTIONS.md      # Access control
-├── LEAVE_REQUESTS_RLS_POLICIES.md      # Leave request security
-├── INDEX_OPTIMIZATION_REPORT.md        # Performance tuning
-└── TRAINING_ATTENDANCE_INDEX_REFERENCE.md  # Attendance indexes
-```
+## 📝 Contributing
 
-## Related Documentation
+When adding new documentation:
+1. Place in appropriate category
+2. Update this index
+3. Use clear, descriptive titles
+4. Include examples where helpful
+5. Keep formatting consistent
 
-- **Spec Documents:** `.kiro/specs/membership-approval-fix/`
-  - `requirements.md` - System requirements
-  - `design.md` - Design specifications
-  - `tasks.md` - Implementation tasks
+## 🆘 Support
 
-- **Database Scripts:** `scripts/`
-  - Migration scripts (31-38)
-  - Verification scripts
-  - Helper function definitions
-
-- **Test Files:** `tests/`
-  - Unit tests
-  - Integration tests
-  - Property-based tests
-
-## Getting Help
-
-1. **Search this documentation** for your topic
-2. **Check troubleshooting sections** in relevant docs
-3. **Review test files** for usage examples
-4. **Check code comments** in source files
-5. **Contact development team** if issues persist
-
-## Contributing to Documentation
-
-When adding new features:
-1. Update relevant documentation files
-2. Add diagrams where helpful (use Mermaid)
-3. Include code examples
-4. Add troubleshooting tips
-5. Update this README if adding new docs
-
----
-
-**Last Updated:** November 23, 2024  
-**Maintained By:** Development Team
+For issues or questions:
+1. Check relevant documentation
+2. Review troubleshooting guides
+3. Check archive for historical context
+4. Contact system administrator

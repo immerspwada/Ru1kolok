@@ -260,6 +260,21 @@ export default async function CoachDashboard() {
                 <ChevronRight className="h-5 w-5 text-gray-400" />
               </Link>
               <Link
+                href="/dashboard/coach/tournaments"
+                className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
+                    <Activity className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-black">ทัวร์นาเมนต์</p>
+                    <p className="text-xs text-gray-500">เลือกนักกีฬาเข้าร่วม</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </Link>
+              <Link
                 href="/dashboard/coach/attendance"
                 className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
               >

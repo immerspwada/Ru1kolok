@@ -1,0 +1,797 @@
+openapi: 3.1.0
+info:
+  title: Sports Club Management - Membership API
+  version: 1.0.0
+  description: |
+    Membership application and approval endpoints for the Sports Club Management System.
+    Handles application submission, review, approval/rejection workflows.
+  contact:
+    name: API Support
+    email: support@sportsclub.example.com
+
+servers:
+  - url: https://your-app.vercel.app/api
+    description: Production server
+  - url: http://localhost:3000/api
+    description: Development server (not used in production-only workflow)
+
+tags:
+  - name: Applications
+    description: Membership application operations
+  - name: Review
+    description: Application review and approval operations
+
+paths:
+  /membership/apply:
+    post:
+      tags:
+        - Applications
+      summary: Submit membership application
+      description: |
+        Submit a new membership application for a specific club. Creates application
+        record with personal information and documents. Updates profile membership_status
+        to 'pending'.
+        
+        **Idempotency**: This endpoint supports idempotency via the `Idempotency-Key` header.
+        Duplicate requests with the same key will return the cached response.
+        
+        **Validates: Requirements 2.1, 2.2, 20.6, 20.7**
+      operationId: submitApplication
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/CausationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationSubmissionRequest'
+            examples:
+              completeApplication:
+                summary: Complete application with all fields
+                value:
+                  club_id: 550e8400-e29b-41d4-a716-446655440000
+                  personal_info:
+                    full_name: สมชาย ใจดี
+                    nickname: ชาย
+                    date_of_birth: "2010-05-15"
+                    phone_number: "0812345678"
+                    gender: male
+                    medical_conditions: ไม่มีโรคประจำตัว
+                    emergency_contact_name: นางสาวสมหญิง ใจดี
+                    emergency_contact_phone: "0898765432"
+                    emergency_contact_relationship: มารดา
+                  documents:
+                    - type: id_card
+                      url: https://storage.supabase.co/...
+                    - type: medical_certificate
+                      url: https://storage.supabase.co/...
+      responses:
+        '200':
+          description: Application submitted successfully
+          headers:
+            X-Request-Id:
+              description: Unique request identifier
+              schema:
+                type: string
+                format: uuid
+            X-Idempotency-Cached:
+              description: Indicates if response was cached (idempotent request)
+              schema:
+                type: string
+                enum: ['true', 'false']
+            X-Original-Timestamp:
+              description: Timestamp of original request (if cached)
+              schema:
+                type: string
+                format: date-time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationSubmissionResponse'
+              examples:
+                success:
+                  summary: Successful submission
+                  value:
+                    success: true
+                    data:
+                      applicationId: 660e8400-e29b-41d4-a716-446655440001
+                    metadata:
+                      timestamp: "2025-11-27T10:30:00Z"
+                      requestId: 770e8400-e29b-41d4-a716-446655440002
+        '400':
+          description: Validation error or duplicate application
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicateApplication:
+                  summary: User already has pending application
+                  value:
+                    success: false
+                    error:
+                      code: DUPLICATE_APPLICATION
+                      message: คุณมีใบสมัครที่รอการอนุมัติอยู่แล้วสำหรับ ชมรมฟุตบอล กรุณารอการพิจารณาก่อนสมัครใหม่
+                validationError:
+                  summary: Invalid input data
+                  value:
+                    success: false
+                    error:
+                      code: VALIDATION_ERROR
+                      message: ข้อมูลไม่ถูกต้อง
+                invalidIdempotencyKey:
+                  summary: Invalid idempotency key format
+                  value:
+                    success: false
+                    error:
+                      code: INVALID_IDEMPOTENCY_KEY
+                      message: Idempotency-Key must be a valid UUID or alphanumeric string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /membership/applications:
+    get:
+      tags:
+        - Applications
+      summary: List membership applications
+      description: |
+        Returns membership applications filtered by user role:
+        - Athletes: Only their own applications
+        - Coaches: Applications for their assigned club
+        - Admins: All applications across all clubs
+        
+        **Validates: Requirements 2.3, 2.10**
+      operationId: listApplications
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter by application status
+          schema:
+            type: string
+            enum: [pending, approved, rejected, info_requested]
+        - name: club_id
+          in: query
+          description: Filter by club ID (admin only)
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          description: Maximum number of results
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          description: Pagination offset
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: Applications retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /membership/applications/{applicationId}:
+    get:
+      tags:
+        - Applications
+      summary: Get application details
+      description: |
+        Returns detailed information about a specific application.
+        Access controlled by RLS policies based on user role.
+        
+        **Validates: Requirements 2.3**
+      operationId: getApplication
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          description: Application UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Application details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationDetailResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  code: NOT_FOUND
+                  message: ไม่พบใบสมัครที่ระบุ
+
+    put:
+      tags:
+        - Review
+      summary: Review application (approve/reject)
+      description: |
+        Review and update application status. Only accessible by coaches
+        assigned to the application's club or system admins.
+        
+        When approved:
+        - Creates athlete profile
+        - Updates profile membership_status to 'active'
+        - Assigns coach to athlete
+        - Sends notification to applicant
+        
+        When rejected:
+        - Updates profile membership_status to 'rejected'
+        - Requires rejection reason
+        - Sends notification with reason
+        
+        **Validates: Requirements 2.4, 2.5**
+      operationId: reviewApplication
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          description: Application UUID
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/CausationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewApplicationRequest'
+            examples:
+              approve:
+                summary: Approve application
+                value:
+                  action: approve
+              reject:
+                summary: Reject application with reason
+                value:
+                  action: reject
+                  reason: ข้อมูลไม่ครบถ้วน กรุณาส่งเอกสารเพิ่มเติม
+      responses:
+        '200':
+          description: Application reviewed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewApplicationResponse'
+              examples:
+                approved:
+                  summary: Application approved
+                  value:
+                    success: true
+                    data:
+                      status: approved
+                      profileId: 880e8400-e29b-41d4-a716-446655440003
+                rejected:
+                  summary: Application rejected
+                  value:
+                    success: true
+                    data:
+                      status: rejected
+        '400':
+          description: Validation error or already processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                alreadyProcessed:
+                  summary: Application already reviewed
+                  value:
+                    success: false
+                    error:
+                      code: ALREADY_PROCESSED
+                      message: ใบสมัครนี้อนุมัติแล้ว
+                missingReason:
+                  summary: Rejection reason required
+                  value:
+                    success: false
+                    error:
+                      code: VALIDATION_ERROR
+                      message: กรุณาระบุเหตุผลในการปฏิเสธ
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  code: AUTHORIZATION_ERROR
+                  message: คุณไม่มีสิทธิ์ในการพิจารณาใบสมัครนี้
+        '404':
+          description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /membership/documents:
+    post:
+      tags:
+        - Applications
+      summary: Upload application documents
+      description: |
+        Upload documents (ID card, medical certificate) to Supabase Storage.
+        Returns signed URLs for document access.
+        
+        **Validates: Requirements 18.1, 18.2, 18.6**
+      operationId: uploadDocuments
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - documentType
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Document file (PDF, JPG, PNG)
+                documentType:
+                  type: string
+                  enum: [id_card, medical_certificate, other]
+                  description: Type of document being uploaded
+      responses:
+        '200':
+          description: Document uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                        format: uri
+                        description: Signed URL for document access
+                        example: https://storage.supabase.co/object/sign/membership-documents/...
+                      documentType:
+                        type: string
+                        example: id_card
+        '400':
+          description: Invalid file type or size
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidFileType:
+                  summary: Unsupported file type
+                  value:
+                    success: false
+                    error:
+                      code: INVALID_FILE_TYPE
+                      message: ประเภทไฟล์ไม่ถูกต้อง กรุณาอัปโหลด PDF, JPG หรือ PNG
+                fileTooLarge:
+                  summary: File exceeds size limit
+                  value:
+                    success: false
+                    error:
+                      code: FILE_TOO_LARGE
+                      message: ไฟล์มีขนาดใหญ่เกินไป (สูงสุด 5MB)
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from Supabase Auth
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      description: |
+        Unique key to ensure idempotent request processing. Use UUID or alphanumeric string.
+        Duplicate requests with the same key return cached response.
+      required: false
+      schema:
+        type: string
+        format: uuid
+        example: 550e8400-e29b-41d4-a716-446655440000
+
+    CorrelationId:
+      name: X-Correlation-ID
+      in: header
+      description: Correlation ID for request tracing across operations
+      required: false
+      schema:
+        type: string
+        format: uuid
+
+    CausationId:
+      name: X-Causation-ID
+      in: header
+      description: Causation ID linking cause and effect operations
+      required: false
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    PersonalInfo:
+      type: object
+      required:
+        - full_name
+        - date_of_birth
+        - phone_number
+        - gender
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 255
+          description: Full name in Thai or English
+          example: สมชาย ใจดี
+        nickname:
+          type: string
+          maxLength: 50
+          description: Preferred nickname
+          example: ชาย
+        date_of_birth:
+          type: string
+          format: date
+          description: Date of birth (must be at least 5 years old)
+          example: "2010-05-15"
+        phone_number:
+          type: string
+          pattern: '^0\d{9}$'
+          description: Thai phone number (10 digits starting with 0)
+          example: "0812345678"
+        gender:
+          type: string
+          enum: [male, female, other]
+          description: Gender
+          example: male
+        medical_conditions:
+          type: string
+          maxLength: 1000
+          description: Medical conditions or health notes
+          example: ไม่มีโรคประจำตัว
+        emergency_contact_name:
+          type: string
+          maxLength: 255
+          description: Emergency contact person name
+          example: นางสาวสมหญิง ใจดี
+        emergency_contact_phone:
+          type: string
+          pattern: '^0\d{9}$'
+          description: Emergency contact phone number
+          example: "0898765432"
+        emergency_contact_relationship:
+          type: string
+          maxLength: 100
+          description: Relationship to emergency contact
+          example: มารดา
+
+    Document:
+      type: object
+      required:
+        - type
+        - url
+      properties:
+        type:
+          type: string
+          enum: [id_card, medical_certificate, other]
+          description: Document type
+        url:
+          type: string
+          format: uri
+          description: Signed URL to document in storage
+          example: https://storage.supabase.co/object/sign/membership-documents/...
+
+    ApplicationSubmissionRequest:
+      type: object
+      required:
+        - club_id
+        - personal_info
+        - documents
+      properties:
+        club_id:
+          type: string
+          format: uuid
+          description: UUID of the club to apply to
+          example: 550e8400-e29b-41d4-a716-446655440000
+        personal_info:
+          $ref: '#/components/schemas/PersonalInfo'
+        documents:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Document'
+          description: Array of uploaded document references
+
+    ApplicationSubmissionResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            applicationId:
+              type: string
+              format: uuid
+              description: UUID of created application
+        metadata:
+          type: object
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+            requestId:
+              type: string
+              format: uuid
+            cached:
+              type: boolean
+              description: True if response was cached (idempotent request)
+            originalTimestamp:
+              type: string
+              format: date-time
+              description: Timestamp of original request (if cached)
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+    ReviewApplicationRequest:
+      type: object
+      required:
+        - action
+      properties:
+        action:
+          type: string
+          enum: [approve, reject]
+          description: Review action to take
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 1000
+          description: Reason for rejection (required if action is 'reject')
+          example: ข้อมูลไม่ครบถ้วน กรุณาส่งเอกสารเพิ่มเติม
+
+    ReviewApplicationResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [approved, rejected]
+            profileId:
+              type: string
+              format: uuid
+              description: UUID of created athlete profile (if approved)
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+    MembershipApplication:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        club_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, approved, rejected, info_requested]
+        personal_info:
+          $ref: '#/components/schemas/PersonalInfo'
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+        profile_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: UUID of created athlete profile (if approved)
+        reviewed_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: UUID of coach/admin who reviewed
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        rejection_reason:
+          type: string
+          nullable: true
+        applied_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        club:
+          type: object
+          properties:
+            name:
+              type: string
+            sport_type:
+              type: string
+
+    ApplicationListResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            applications:
+              type: array
+              items:
+                $ref: '#/components/schemas/MembershipApplication'
+            total:
+              type: integer
+              description: Total number of applications matching filter
+            limit:
+              type: integer
+            offset:
+              type: integer
+
+    ApplicationDetailResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/MembershipApplication'
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              enum:
+                - VALIDATION_ERROR
+                - AUTHENTICATION_REQUIRED
+                - AUTHORIZATION_ERROR
+                - NOT_FOUND
+                - DUPLICATE_APPLICATION
+                - ALREADY_PROCESSED
+                - INVALID_FILE_TYPE
+                - FILE_TOO_LARGE
+                - INVALID_IDEMPOTENCY_KEY
+                - RATE_LIMIT_EXCEEDED
+                - INTERNAL_ERROR
+            message:
+              type: string
+              description: Human-readable error message (Thai language)
+            details:
+              type: object
+              description: Additional error details
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: AUTHENTICATION_REQUIRED
+              message: กรุณาเข้าสู่ระบบ
+
+    RateLimitError:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: RATE_LIMIT_EXCEEDED
+              message: ลองบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying
+          schema:
+            type: integer
+            example: 60
+
+security:
+  - bearerAuth: []

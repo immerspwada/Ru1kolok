@@ -220,19 +220,20 @@ export async function updateAthleteProfileComplete(
       return { error: 'ไม่ได้รับอนุญาต: กรุณาเข้าสู่ระบบ' };
     }
 
-    // Verify the athlete belongs to the current user
-    const { data: athlete, error: athleteError } = await supabase
-      .from('athletes')
-      .select('*')
+    // Verify the athlete belongs to the current user - only allow editing own profile
+    if (athleteId !== user.id) {
+      return { error: 'ไม่ได้รับอนุญาต: คุณไม่สามารถแก้ไขโปรไฟล์ของผู้อื่นได้' };
+    }
+
+    // Verify profile exists
+    const { data: athlete, error: athleteError } = await (supabase as any)
+      .from('profiles')
+      .select('id')
       .eq('id', athleteId)
       .single();
 
     if (athleteError || !athlete) {
       return { error: 'ไม่พบข้อมูลนักกีฬา' };
-    }
-
-    if (athlete.user_id !== user.id) {
-      return { error: 'ไม่ได้รับอนุญาต: คุณไม่สามารถแก้ไขโปรไฟล์ของผู้อื่นได้' };
     }
 
     // Split full name into first and last name
@@ -241,8 +242,8 @@ export async function updateAthleteProfileComplete(
     const lastName = nameParts.slice(1).join(' ') || nameParts[0];
 
     // Update athlete profile
-    const { error: updateError } = await supabase
-      .from('athletes')
+    const { error: updateError } = await (supabase as any)
+      .from('profiles')
       .update({
         first_name: firstName,
         last_name: lastName,
@@ -259,7 +260,7 @@ export async function updateAthleteProfileComplete(
     }
 
     // Update membership application if exists
-    const { data: application } = await supabase
+    const { data: application } = await (supabase as any)
       .from('membership_applications')
       .select('*')
       .eq('user_id', user.id)
@@ -321,7 +322,7 @@ export async function updateAthleteProfileComplete(
       }
 
       // Update application
-      const { error: appUpdateError } = await supabase
+      const { error: appUpdateError } = await (supabase as any)
         .from('membership_applications')
         .update({
           personal_info: data.personalInfo,
@@ -339,7 +340,7 @@ export async function updateAthleteProfileComplete(
     // Log audit event
     await createAuditLog({
       userId: user.id,
-      actionType: 'athlete.update_complete',
+      actionType: 'athlete.update' as any,
       entityType: 'athlete',
       entityId: athleteId,
       details: {

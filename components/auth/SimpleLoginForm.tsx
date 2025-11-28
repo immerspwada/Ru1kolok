@@ -226,6 +226,19 @@ export function SimpleLoginForm() {
           </Link>
         </div>
 
+        {/* Parent Login Link */}
+        <div className="mt-4 text-center">
+          <Link 
+            href="/parent/login" 
+            className="inline-flex items-center gap-2 px-6 py-3 text-base bg-purple-50 hover:bg-purple-100 text-purple-700 font-medium rounded-lg border border-purple-200 transition-all duration-200 touch-manipulation transform hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            เข้าสู่ระบบสำหรับผู้ปกครอง
+          </Link>
+        </div>
+
         {/* Test Credentials with Slide-down Animation - Only visible in development */}
         {process.env.NODE_ENV === 'development' && (
           <div className="mt-6 pt-6 border-t border-gray-200">

@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "org.club.training.attendance.recorded.v1",
+  "title": "Training Attendance Recorded Event",
+  "description": "Published when attendance is recorded for a training session (check-in or manual marking)",
+  "type": "object",
+  "required": ["eventId", "eventType", "timestamp", "data"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this event instance"
+    },
+    "eventType": {
+      "type": "string",
+      "const": "org.club.training.attendance.recorded.v1",
+      "description": "Event type identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the event occurred"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Correlation ID linking related operations"
+    },
+    "causationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Causation ID of the operation that triggered this event"
+    },
+    "data": {
+      "type": "object",
+      "required": ["attendanceId", "sessionId", "athleteId", "status", "markedBy"],
+      "properties": {
+        "attendanceId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the attendance record"
+        },
+        "sessionId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Training session the attendance is for"
+        },
+        "athleteId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Athlete whose attendance was recorded"
+        },
+        "clubId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Club the session belongs to"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["present", "absent", "late", "excused"],
+          "description": "Attendance status"
+        },
+        "checkInTime": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "When the athlete checked in (null for absent/excused)"
+        },
+        "checkInMethod": {
+          "type": "string",
+          "enum": ["manual", "qr", "auto"],
+          "description": "How attendance was recorded"
+        },
+        "markedBy": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User who marked the attendance (athlete for check-in, coach for manual)"
+        },
+        "notes": {
+          "type": ["string", "null"],
+          "description": "Optional notes about the attendance"
+        },
+        "recordedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the attendance record was created"
+        }
+      }
+    }
+  }
+}

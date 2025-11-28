@@ -1,0 +1,108 @@
+/**
+ * Admin Feature Flags API
+ * 
+ * Endpoints for managing feature flags:
+ * - PATCH: Update feature flag
+ * 
+ * Requirements: 20.8, 20.9
+ */
+
+import { createClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+
+    // Check authentication
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Check if user is admin
+    const { data: userRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+
+    if (userRole?.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Forbidden: Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    // Parse request body
+    const body = await request.json();
+    const { name, enabled, rollout_percentage } = body;
+
+    if (!name) {
+      return NextResponse.json(
+        { error: 'Feature flag name is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate rollout_percentage if provided
+    if (rollout_percentage !== undefined) {
+      if (
+        typeof rollout_percentage !== 'number' ||
+        rollout_percentage < 0 ||
+        rollout_percentage > 100
+      ) {
+        return NextResponse.json(
+          { error: 'Rollout percentage must be between 0 and 100' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Build update object
+    const updates: any = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (enabled !== undefined) {
+      updates.enabled = enabled;
+    }
+
+    if (rollout_percentage !== undefined) {
+      updates.rollout_percentage = rollout_percentage;
+    }
+
+    // Update feature flag
+    const { data, error } = await supabase
+      .from('feature_flags')
+      .update(updates)
+      .eq('name', name)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating feature flag:', error);
+      return NextResponse.json(
+        { error: 'Failed to update feature flag' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error('Error in feature flags API:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

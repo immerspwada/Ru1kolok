@@ -1,0 +1,712 @@
+openapi: 3.1.0
+info:
+  title: Sports Club Management - Authentication API
+  version: 1.0.0
+  description: |
+    Authentication and authorization endpoints for the Sports Club Management System.
+    Handles user registration, login, logout, OTP verification, and session management.
+  contact:
+    name: API Support
+    email: support@sportsclub.example.com
+
+servers:
+  - url: https://your-app.vercel.app/api
+    description: Production server
+  - url: http://localhost:3000/api
+    description: Development server (not used in production-only workflow)
+
+tags:
+  - name: Authentication
+    description: User authentication operations
+  - name: Session Management
+    description: Login session tracking and device management
+  - name: Password Management
+    description: Password reset and update operations
+
+paths:
+  /auth/signup:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user account
+      description: |
+        Creates a new user account with email and password. Automatically creates:
+        - Auth account in Supabase Auth
+        - Profile record with membership_status = null
+        - User role record with default role 'athlete'
+        
+        **Validates: Requirements 1.1**
+      operationId: signUp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
+            examples:
+              validSignup:
+                summary: Valid signup request
+                value:
+                  email: athlete@example.com
+                  password: SecurePass123!
+      responses:
+        '200':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignUpResponse'
+              examples:
+                success:
+                  summary: Successful registration
+                  value:
+                    success: true
+                    userId: 550e8400-e29b-41d4-a716-446655440000
+        '400':
+          description: Validation error or duplicate email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicateEmail:
+                  summary: Email already registered
+                  value:
+                    success: false
+                    error: อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น
+                invalidEmail:
+                  summary: Invalid email format
+                  value:
+                    success: false
+                    error: รูปแบบอีเมลไม่ถูกต้อง กรุณาใช้อีเมลจริง (เช่น example@gmail.com)
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                rateLimited:
+                  summary: Too many signup attempts
+                  value:
+                    success: false
+                    error: ลองสมัครบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง (1-2 นาที)
+
+  /auth/signin:
+    post:
+      tags:
+        - Authentication
+      summary: Authenticate user and create session
+      description: |
+        Authenticates user with email and password. Creates a login session record
+        with device fingerprint and metadata.
+        
+        **Validates: Requirements 1.2, 1.9**
+      operationId: signIn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInRequest'
+            examples:
+              withDeviceInfo:
+                summary: Login with device tracking
+                value:
+                  email: athlete@example.com
+                  password: SecurePass123!
+                  deviceInfo:
+                    deviceId: device-fingerprint-abc123
+                    userAgent: Mozilla/5.0...
+                    platform: MacIntel
+                    language: th-TH
+                    screenResolution: 1920x1080
+                    timezone: Asia/Bangkok
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignInResponse'
+              examples:
+                success:
+                  summary: Successful login
+                  value:
+                    success: true
+                    data:
+                      user:
+                        id: 550e8400-e29b-41d4-a716-446655440000
+                        email: athlete@example.com
+                      session:
+                        access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  summary: Wrong email or password
+                  value:
+                    success: false
+                    error: อีเมลหรือรหัสผ่านไม่ถูกต้อง
+        '403':
+          description: Email not confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailNotConfirmed:
+                  summary: Email verification required
+                  value:
+                    success: false
+                    error: กรุณายืนยันอีเมลของคุณก่อนเข้าสู่ระบบ
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                rateLimited:
+                  summary: Too many login attempts
+                  value:
+                    success: false
+                    error: ลองเข้าสู่ระบบบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง
+
+  /auth/signout:
+    post:
+      tags:
+        - Authentication
+      summary: End user session
+      description: |
+        Signs out the current user and updates the logout timestamp for the session.
+        
+        **Validates: Requirements 1.9**
+      operationId: signOut
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deviceId:
+                  type: string
+                  description: Device fingerprint to update logout time
+                  example: device-fingerprint-abc123
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/verify-otp:
+    post:
+      tags:
+        - Authentication
+      summary: Verify email with OTP code
+      description: |
+        Verifies user email address using the OTP code sent during registration.
+        
+        **Validates: Requirements 1.1**
+      operationId: verifyOTP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOTPRequest'
+            examples:
+              validOTP:
+                summary: Valid OTP verification
+                value:
+                  email: athlete@example.com
+                  token: "123456"
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid or expired OTP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/resend-otp:
+    post:
+      tags:
+        - Authentication
+      summary: Resend OTP verification code
+      description: Resends the email verification OTP to the user's email address.
+      operationId: resendOTP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: athlete@example.com
+      responses:
+        '200':
+          description: OTP resent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/reset-password:
+    post:
+      tags:
+        - Password Management
+      summary: Request password reset
+      description: Sends a password reset email to the user's email address.
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: athlete@example.com
+      responses:
+        '200':
+          description: Password reset email sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/update-password:
+    post:
+      tags:
+        - Password Management
+      summary: Update user password
+      description: Updates the password for the authenticated user.
+      operationId: updatePassword
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - newPassword
+              properties:
+                newPassword:
+                  type: string
+                  format: password
+                  minLength: 8
+                  description: |
+                    New password must meet requirements:
+                    - Minimum 8 characters
+                    - At least one uppercase letter
+                    - At least one lowercase letter
+                    - At least one number
+                    - At least one special character
+                  example: NewSecurePass123!
+      responses:
+        '200':
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Password validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/current-user:
+    get:
+      tags:
+        - Authentication
+      summary: Get current authenticated user
+      description: Returns the current user's profile and role information.
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User information retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/sessions/history:
+    get:
+      tags:
+        - Session Management
+      summary: Get login history
+      description: |
+        Returns all login sessions for the current user with device information.
+        
+        **Validates: Requirements 1.2**
+      operationId: getLoginHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of sessions to return
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Login history retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginHistoryResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/sessions/active:
+    get:
+      tags:
+        - Session Management
+      summary: Get active sessions
+      description: |
+        Returns all active (not logged out) sessions for the current user.
+        
+        **Validates: Requirements 1.2**
+      operationId: getActiveSessions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active sessions retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginHistoryResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from Supabase Auth
+
+  schemas:
+    SignUpRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: athlete@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: |
+            Password must meet requirements:
+            - Minimum 8 characters
+            - At least one uppercase letter
+            - At least one lowercase letter
+            - At least one number
+            - At least one special character
+          example: SecurePass123!
+
+    SignUpResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          example: true
+        userId:
+          type: string
+          format: uuid
+          description: ID of the created user
+          example: 550e8400-e29b-41d4-a716-446655440000
+        error:
+          type: string
+          description: Error message if success is false
+
+    SignInRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: athlete@example.com
+        password:
+          type: string
+          format: password
+          example: SecurePass123!
+        deviceInfo:
+          $ref: '#/components/schemas/DeviceInfo'
+
+    DeviceInfo:
+      type: object
+      required:
+        - deviceId
+      properties:
+        deviceId:
+          type: string
+          description: Unique device fingerprint
+          example: device-fingerprint-abc123
+        userAgent:
+          type: string
+          description: Browser user agent string
+          example: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)
+        platform:
+          type: string
+          description: Operating system platform
+          example: MacIntel
+        language:
+          type: string
+          description: Browser language
+          example: th-TH
+        screenResolution:
+          type: string
+          description: Screen resolution
+          example: 1920x1080
+        timezone:
+          type: string
+          description: User's timezone
+          example: Asia/Bangkok
+
+    SignInResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                email:
+                  type: string
+                  format: email
+            session:
+              type: object
+              properties:
+                access_token:
+                  type: string
+                  description: JWT access token
+                refresh_token:
+                  type: string
+                  description: JWT refresh token
+        error:
+          type: string
+          description: Error message if success is false
+
+    VerifyOTPRequest:
+      type: object
+      required:
+        - email
+        - token
+      properties:
+        email:
+          type: string
+          format: email
+          example: athlete@example.com
+        token:
+          type: string
+          description: 6-digit OTP code
+          pattern: '^\d{6}$'
+          example: "123456"
+
+    CurrentUserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, coach, athlete, parent]
+          description: User's role in the system
+
+    LoginSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        device_id:
+          type: string
+        device_info:
+          $ref: '#/components/schemas/DeviceInfo'
+        user_agent:
+          type: string
+          nullable: true
+        login_at:
+          type: string
+          format: date-time
+        logout_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    LoginHistoryResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          example: true
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/LoginSession'
+        error:
+          type: string
+          description: Error message if success is false
+
+    SuccessResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          example: true
+        error:
+          type: string
+          description: Error message if success is false
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Human-readable error message (Thai language)
+          example: อีเมลหรือรหัสผ่านไม่ถูกต้อง
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: กรุณาเข้าสู่ระบบ
+
+    RateLimitError:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: ลองบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying
+          schema:
+            type: integer
+            example: 60
+
+security:
+  - bearerAuth: []

@@ -2,6 +2,17 @@
 -- PART 2: Helper Functions and RLS Policies
 -- Run this AFTER 01-schema-only.sql in Supabase Dashboard SQL Editor
 -- ============================================================================
+-- 
+-- Migration: 02-auth-functions-and-rls.sql
+-- Description: Creates RLS helper functions and enables RLS policies on all tables
+-- 
+-- UP: Creates helper functions, enables RLS, and creates all policies
+-- DOWN: Drops all policies, disables RLS, and drops helper functions
+-- ============================================================================
+
+-- ============================================================================
+-- UP MIGRATION
+-- ============================================================================
 
 -- ============================================================================
 -- RLS HELPER FUNCTIONS (in public schema - works everywhere)
@@ -293,3 +304,81 @@ CREATE POLICY "Admins can view all audit logs"
 CREATE POLICY "System can insert audit logs"
   ON audit_logs FOR INSERT
   WITH CHECK (true);
+
+
+-- ============================================================================
+-- DOWN MIGRATION
+-- ============================================================================
+-- Uncomment and run this section to rollback the migration
+
+/*
+
+-- Drop all RLS policies
+DROP POLICY IF EXISTS "System can insert audit logs" ON audit_logs;
+DROP POLICY IF EXISTS "Admins can view all audit logs" ON audit_logs;
+
+DROP POLICY IF EXISTS "Admins and coaches can manage announcements" ON announcements;
+DROP POLICY IF EXISTS "Users can view announcements targeted to them" ON announcements;
+
+DROP POLICY IF EXISTS "Coaches and admins can update metrics" ON performance_metrics;
+DROP POLICY IF EXISTS "Coaches and admins can insert metrics" ON performance_metrics;
+DROP POLICY IF EXISTS "Coaches can view metrics for their team members" ON performance_metrics;
+DROP POLICY IF EXISTS "Athletes can view their own metrics" ON performance_metrics;
+
+DROP POLICY IF EXISTS "Coaches can manage attendance for their sessions" ON attendance;
+DROP POLICY IF EXISTS "Coaches can view attendance for their sessions" ON attendance;
+DROP POLICY IF EXISTS "Athletes can view their own attendance" ON attendance;
+
+DROP POLICY IF EXISTS "Coaches can manage their team sessions" ON training_sessions;
+DROP POLICY IF EXISTS "Team members can view their sessions" ON training_sessions;
+
+DROP POLICY IF EXISTS "Coaches can manage their team members" ON team_members;
+DROP POLICY IF EXISTS "Users can view team members of their teams" ON team_members;
+
+DROP POLICY IF EXISTS "Coaches can manage their teams" ON teams;
+DROP POLICY IF EXISTS "Admins can manage all teams" ON teams;
+DROP POLICY IF EXISTS "Users can view teams in their club" ON teams;
+
+DROP POLICY IF EXISTS "Admins can manage sports" ON sports;
+DROP POLICY IF EXISTS "Everyone can view sports" ON sports;
+
+DROP POLICY IF EXISTS "Admins can update any profile" ON profiles;
+DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
+DROP POLICY IF EXISTS "Admins and coaches can view all profiles in their club" ON profiles;
+DROP POLICY IF EXISTS "Users can view their own profile" ON profiles;
+
+DROP POLICY IF EXISTS "Admins can delete clubs" ON clubs;
+DROP POLICY IF EXISTS "Admins can update clubs" ON clubs;
+DROP POLICY IF EXISTS "Admins can insert clubs" ON clubs;
+DROP POLICY IF EXISTS "Everyone can view clubs" ON clubs;
+
+DROP POLICY IF EXISTS "Admins can delete roles" ON user_roles;
+DROP POLICY IF EXISTS "Admins can update roles" ON user_roles;
+DROP POLICY IF EXISTS "Admins can insert roles" ON user_roles;
+DROP POLICY IF EXISTS "Admins can view all roles" ON user_roles;
+DROP POLICY IF EXISTS "Users can view their own role" ON user_roles;
+
+-- Disable RLS on all tables
+ALTER TABLE audit_logs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE announcements DISABLE ROW LEVEL SECURITY;
+ALTER TABLE performance_metrics DISABLE ROW LEVEL SECURITY;
+ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
+ALTER TABLE training_sessions DISABLE ROW LEVEL SECURITY;
+ALTER TABLE team_members DISABLE ROW LEVEL SECURITY;
+ALTER TABLE teams DISABLE ROW LEVEL SECURITY;
+ALTER TABLE sports DISABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles DISABLE ROW LEVEL SECURITY;
+ALTER TABLE clubs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE user_roles DISABLE ROW LEVEL SECURITY;
+
+-- Drop RLS helper functions
+DROP FUNCTION IF EXISTS public.get_user_club_id();
+DROP FUNCTION IF EXISTS public.is_team_member(UUID);
+DROP FUNCTION IF EXISTS public.is_coach_of_team(UUID);
+DROP FUNCTION IF EXISTS public.is_athlete();
+DROP FUNCTION IF EXISTS public.is_coach();
+DROP FUNCTION IF EXISTS public.is_admin();
+DROP FUNCTION IF EXISTS public.get_user_role();
+
+*/

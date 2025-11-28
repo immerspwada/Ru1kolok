@@ -48,7 +48,7 @@ export default async function SchedulePage() {
 
   // Get attendance records for this athlete
   const attendanceRecordsResult = await supabase
-    .from('attendance_logs')
+    .from('attendance')
     .select('training_session_id, status, check_in_time')
     .eq('athlete_id', athlete.id);
   const attendanceRecords = attendanceRecordsResult.data as Array<{

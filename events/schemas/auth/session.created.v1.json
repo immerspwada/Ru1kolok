@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "org.club.auth.session.created.v1",
+  "title": "Session Created Event",
+  "description": "Published when a user successfully logs in and a session is created",
+  "type": "object",
+  "required": ["eventId", "eventType", "timestamp", "data"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this event instance"
+    },
+    "eventType": {
+      "type": "string",
+      "const": "org.club.auth.session.created.v1",
+      "description": "Event type identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the event occurred"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Correlation ID linking related operations"
+    },
+    "causationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Causation ID of the operation that triggered this event"
+    },
+    "data": {
+      "type": "object",
+      "required": ["sessionId", "userId", "loginAt"],
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the login session"
+        },
+        "userId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User who logged in"
+        },
+        "deviceId": {
+          "type": "string",
+          "description": "Device fingerprint identifier"
+        },
+        "deviceInfo": {
+          "type": "object",
+          "properties": {
+            "userAgent": {
+              "type": "string",
+              "description": "Browser user agent string"
+            },
+            "platform": {
+              "type": "string",
+              "description": "Operating system platform"
+            },
+            "language": {
+              "type": "string",
+              "description": "Browser language"
+            },
+            "screenResolution": {
+              "type": "string",
+              "description": "Screen resolution (e.g., 1920x1080)"
+            },
+            "timezone": {
+              "type": "string",
+              "description": "User timezone"
+            }
+          }
+        },
+        "loginAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when login occurred"
+        },
+        "ipAddress": {
+          "type": "string",
+          "description": "IP address of the login request"
+        }
+      }
+    }
+  }
+}

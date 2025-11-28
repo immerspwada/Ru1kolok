@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "org.club.membership.application.submitted.v1",
+  "title": "Membership Application Submitted Event",
+  "description": "Published when an athlete submits a membership application to join a club",
+  "type": "object",
+  "required": ["eventId", "eventType", "timestamp", "data"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this event instance"
+    },
+    "eventType": {
+      "type": "string",
+      "const": "org.club.membership.application.submitted.v1",
+      "description": "Event type identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the event occurred"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Correlation ID linking related operations"
+    },
+    "causationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Causation ID of the operation that triggered this event"
+    },
+    "data": {
+      "type": "object",
+      "required": ["applicationId", "userId", "clubId", "appliedAt"],
+      "properties": {
+        "applicationId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the membership application"
+        },
+        "userId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User who submitted the application"
+        },
+        "clubId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Club the user is applying to join"
+        },
+        "appliedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when application was submitted"
+        },
+        "hasDocuments": {
+          "type": "boolean",
+          "description": "Whether supporting documents were uploaded"
+        },
+        "personalInfo": {
+          "type": "object",
+          "properties": {
+            "fullName": {
+              "type": "string"
+            },
+            "dateOfBirth": {
+              "type": "string",
+              "format": "date"
+            },
+            "phoneNumber": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -238,3 +238,41 @@ BEGIN
   RAISE NOTICE 'Storage bucket: membership-documents';
   RAISE NOTICE 'Helper functions: add_activity_log, update_application_status';
 END $$;
+
+
+-- ============================================================================
+-- DOWN MIGRATION
+-- ============================================================================
+-- Uncomment and run this section to rollback the migration
+-- WARNING: This will delete all membership application data
+
+/*
+
+-- Drop trigger
+DROP TRIGGER IF EXISTS trigger_update_membership_applications_updated_at ON membership_applications;
+
+-- Drop trigger function
+DROP FUNCTION IF EXISTS update_membership_applications_updated_at();
+
+-- Drop helper functions
+DROP FUNCTION IF EXISTS update_application_status(UUID, TEXT, UUID, TEXT);
+DROP FUNCTION IF EXISTS add_activity_log(UUID, TEXT, UUID, JSONB);
+
+-- Drop indexes
+DROP INDEX IF EXISTS idx_applications_activity_log;
+DROP INDEX IF EXISTS idx_applications_documents;
+DROP INDEX IF EXISTS idx_applications_personal_info;
+DROP INDEX IF EXISTS idx_applications_profile;
+DROP INDEX IF EXISTS idx_applications_created;
+DROP INDEX IF EXISTS idx_applications_status;
+DROP INDEX IF EXISTS idx_applications_club;
+DROP INDEX IF EXISTS idx_applications_user;
+
+-- Drop table
+DROP TABLE IF EXISTS membership_applications CASCADE;
+
+-- Note: Storage bucket 'membership-documents' is NOT automatically deleted
+-- To remove it, use Supabase Dashboard or:
+-- DELETE FROM storage.buckets WHERE id = 'membership-documents';
+
+*/

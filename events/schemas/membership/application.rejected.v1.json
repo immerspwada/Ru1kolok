@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "org.club.membership.application.rejected.v1",
+  "title": "Membership Application Rejected Event",
+  "description": "Published when a coach rejects a membership application",
+  "type": "object",
+  "required": ["eventId", "eventType", "timestamp", "data"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this event instance"
+    },
+    "eventType": {
+      "type": "string",
+      "const": "org.club.membership.application.rejected.v1",
+      "description": "Event type identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the event occurred"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Correlation ID linking related operations"
+    },
+    "causationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Causation ID of the operation that triggered this event"
+    },
+    "data": {
+      "type": "object",
+      "required": ["applicationId", "athleteId", "clubId", "rejectedAt", "rejectionReason"],
+      "properties": {
+        "applicationId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the membership application"
+        },
+        "athleteId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User ID of the athlete whose application was rejected"
+        },
+        "clubId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Club the athlete applied to join"
+        },
+        "rejectedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when application was rejected"
+        },
+        "rejectionReason": {
+          "type": "string",
+          "description": "Reason provided by the coach for rejection",
+          "minLength": 10
+        },
+        "reviewedBy": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User ID of the coach who rejected the application"
+        },
+        "membershipStatus": {
+          "type": "string",
+          "const": "rejected",
+          "description": "New membership status after rejection"
+        }
+      }
+    }
+  }
+}

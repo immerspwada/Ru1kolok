@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import PersonalInfoForm from '@/components/membership/PersonalInfoForm';
 import DocumentUpload from '@/components/membership/DocumentUpload';
+import { ProfilePictureUpload } from '@/components/athlete/ProfilePictureUpload';
 import { Loader2, Save, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { personalInfoSchema, type PersonalInfoInput } from '@/lib/membership/validation';
 import { updateAthleteProfileComplete } from '@/lib/athlete/actions';
@@ -206,6 +207,19 @@ export default function ProfileEditFormComplete({ athlete, application }: Profil
           {/* Personal Info Tab */}
           {activeTab === 'personal' && (
             <div className="space-y-6">
+              {/* Profile Picture Upload */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h3 className="text-sm font-medium text-gray-900 mb-4">รูปโปรไฟล์</h3>
+                <ProfilePictureUpload
+                  userId={athlete.user_id}
+                  currentPictureUrl={athlete.profile_picture_url}
+                  onUploadSuccess={() => {
+                    // Refresh page to show new picture
+                    router.refresh();
+                  }}
+                />
+              </div>
+
               <PersonalInfoForm
                 value={personalInfo}
                 onChange={setPersonalInfo}

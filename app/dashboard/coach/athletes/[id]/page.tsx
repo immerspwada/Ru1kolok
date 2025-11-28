@@ -4,6 +4,7 @@ import { ArrowLeft, Mail, Phone, Calendar, TrendingUp, Target, Award } from 'luc
 import Link from 'next/link';
 import { AthleteGoalsList } from '@/components/coach/AthleteGoalsList';
 import { CreateGoalDialog } from '@/components/coach/CreateGoalDialog';
+import CreateProgressReportDialog from '@/components/coach/CreateProgressReportDialog';
 
 interface Params {
   id: string;
@@ -47,7 +48,7 @@ export default async function AthleteDetailPage({ params }: { params: Params }) 
 
   // Get attendance stats
   const { count: totalAttendance } = await supabase
-    .from('attendance_logs')
+    .from('attendance')
     .select('*', { count: 'exact', head: true })
     .eq('athlete_id', athlete.id)
     .eq('status', 'present');
@@ -60,7 +61,7 @@ export default async function AthleteDetailPage({ params }: { params: Params }) 
 
   // Get recent attendance with feedback
   const { data: recentAttendance } = await supabase
-    .from('attendance_logs')
+    .from('attendance')
     .select(
       `
       *,
@@ -113,7 +114,13 @@ export default async function AthleteDetailPage({ params }: { params: Params }) 
                 <p className="text-sm text-gray-500">({athlete.nickname})</p>
               )}
             </div>
-            <CreateGoalDialog athleteId={athlete.id} />
+            <div className="flex gap-2">
+              <CreateProgressReportDialog
+                athleteId={athlete.id}
+                athleteName={`${athlete.first_name} ${athlete.last_name}`}
+              />
+              <CreateGoalDialog athleteId={athlete.id} />
+            </div>
           </div>
         </div>
       </div>

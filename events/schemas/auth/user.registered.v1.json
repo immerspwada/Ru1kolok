@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "org.club.auth.user.registered.v1",
+  "title": "User Registered Event",
+  "description": "Published when a new user account is created in the system",
+  "type": "object",
+  "required": ["eventId", "eventType", "timestamp", "data"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this event instance"
+    },
+    "eventType": {
+      "type": "string",
+      "const": "org.club.auth.user.registered.v1",
+      "description": "Event type identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the event occurred"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Correlation ID linking related operations"
+    },
+    "causationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Causation ID of the operation that triggered this event"
+    },
+    "data": {
+      "type": "object",
+      "required": ["userId", "email", "role"],
+      "properties": {
+        "userId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the newly created user"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address of the registered user"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "coach", "athlete", "parent"],
+          "description": "Default role assigned to the user"
+        },
+        "profileId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Profile record ID created for the user"
+        },
+        "registeredAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when registration completed"
+        }
+      }
+    }
+  }
+}

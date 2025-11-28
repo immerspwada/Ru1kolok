@@ -1,0 +1,748 @@
+openapi: 3.1.0
+info:
+  title: Sports Club Management - Training Sessions API
+  version: 1.0.0
+  description: |
+    Training session management endpoints for coaches and athletes.
+    Handles session creation, updates, cancellation, and listing.
+  contact:
+    name: API Support
+    email: support@sportsclub.example.com
+
+servers:
+  - url: https://your-app.vercel.app/api
+    description: Production server
+  - url: http://localhost:3000/api
+    description: Development server (not used in production-only workflow)
+
+tags:
+  - name: Coach Sessions
+    description: Training session management for coaches
+  - name: Athlete Sessions
+    description: Training session viewing for athletes
+
+paths:
+  /coach/sessions:
+    post:
+      tags:
+        - Coach Sessions
+      summary: Create training session
+      description: |
+        Create a new training session for the coach's club. Validates that:
+        - Session date is not in the past
+        - Start time is before end time
+        - All required fields are provided
+        
+        **Idempotency**: This endpoint supports idempotency via the `Idempotency-Key` header.
+        
+        **Validates: Requirements 3.1, 3.2, 20.6, 20.7**
+      operationId: createSession
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/CausationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+            examples:
+              basicSession:
+                summary: Basic training session
+                value:
+                  title: ฝึกซ้อมประจำสัปดาห์
+                  description: ฝึกทักษะพื้นฐานและการเล่นเป็นทีม
+                  session_date: "2025-12-01"
+                  start_time: "16:00"
+                  end_time: "18:00"
+                  location: สนามกีฬาหลัก
+      responses:
+        '200':
+          description: Session created successfully
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+            X-Idempotency-Cached:
+              $ref: '#/components/headers/IdempotencyCached'
+            X-Original-Timestamp:
+              $ref: '#/components/headers/OriginalTimestamp'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+              examples:
+                success:
+                  summary: Session created
+                  value:
+                    success: true
+                    data:
+                      session:
+                        id: 770e8400-e29b-41d4-a716-446655440004
+                        club_id: 550e8400-e29b-41d4-a716-446655440000
+                        coach_id: 660e8400-e29b-41d4-a716-446655440001
+                        title: ฝึกซ้อมประจำสัปดาห์
+                        description: ฝึกทักษะพื้นฐานและการเล่นเป็นทีม
+                        session_date: "2025-12-01"
+                        start_time: "16:00"
+                        end_time: "18:00"
+                        location: สนามกีฬาหลัก
+                        created_at: "2025-11-27T10:30:00Z"
+                    metadata:
+                      timestamp: "2025-11-27T10:30:00Z"
+                      requestId: 880e8400-e29b-41d4-a716-446655440005
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                pastDate:
+                  summary: Session date in the past
+                  value:
+                    success: false
+                    error:
+                      code: VALIDATION_ERROR
+                      message: ไม่สามารถกำหนดวันในอดีตได้
+                invalidTime:
+                  summary: Invalid time range
+                  value:
+                    success: false
+                    error:
+                      code: VALIDATION_ERROR
+                      message: เวลาเริ่มต้องน้อยกว่าเวลาสิ้นสุด
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Not a coach
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  code: AUTHORIZATION_ERROR
+                  message: ไม่พบข้อมูลโค้ช
+
+    get:
+      tags:
+        - Coach Sessions
+      summary: List coach's training sessions
+      description: |
+        Returns all training sessions for the authenticated coach's club.
+        Supports filtering by upcoming/past and pagination.
+        
+        **Validates: Requirements 3.5**
+      operationId: getCoachSessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: upcoming
+          in: query
+          description: Filter for upcoming sessions only
+          schema:
+            type: boolean
+        - name: past
+          in: query
+          description: Filter for past sessions only
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          description: Maximum number of results
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 500
+        - name: offset
+          in: query
+          description: Pagination offset
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: Sessions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /coach/sessions/{sessionId}:
+    get:
+      tags:
+        - Coach Sessions
+      summary: Get session details
+      description: |
+        Returns detailed information about a specific training session,
+        including attendance count.
+        
+        **Validates: Requirements 3.5**
+      operationId: getSessionDetails
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          description: Session UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionDetailResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Coach Sessions
+      summary: Update training session
+      description: |
+        Update an existing training session. Only the coach who created
+        the session can update it. Validates:
+        - Session date is not in the past
+        - Start time is before end time
+        - Coach owns the session
+        
+        **Validates: Requirements 3.3**
+      operationId: updateSession
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          description: Session UUID
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/CausationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSessionRequest'
+            examples:
+              updateTime:
+                summary: Update session time
+                value:
+                  start_time: "17:00"
+                  end_time: "19:00"
+              updateLocation:
+                summary: Update location
+                value:
+                  location: สนามกีฬารอง
+      responses:
+        '200':
+          description: Session updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Not authorized to update this session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  code: AUTHORIZATION_ERROR
+                  message: ไม่ได้รับอนุญาต: คุณไม่สามารถแก้ไขตารางของโค้ชอื่นได้
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Coach Sessions
+      summary: Cancel training session
+      description: |
+        Cancel a training session. Can only cancel if at least 2 hours
+        before the session start time. Only the coach who created the
+        session can cancel it.
+        
+        **Validates: Requirements 3.4**
+      operationId: cancelSession
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          description: Session UUID
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/CausationId'
+      responses:
+        '200':
+          description: Session cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Cannot cancel (too close to start time)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  code: VALIDATION_ERROR
+                  message: ไม่สามารถยกเลิกตารางได้ ต้องยกเลิกก่อนเวลาเริ่มอย่างน้อย 2 ชั่วโมง
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Not authorized to cancel this session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /athlete/sessions:
+    get:
+      tags:
+        - Athlete Sessions
+      summary: List athlete's club sessions
+      description: |
+        Returns all training sessions for the athlete's club.
+        Filtered by RLS policies to show only sessions from the athlete's club.
+        
+        **Validates: Requirements 3.5**
+      operationId: getAthleteSessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: upcoming
+          in: query
+          description: Filter for upcoming sessions only
+          schema:
+            type: boolean
+            default: true
+        - name: limit
+          in: query
+          description: Maximum number of results
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Sessions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /athlete/sessions/{sessionId}:
+    get:
+      tags:
+        - Athlete Sessions
+      summary: Get session details for athlete
+      description: |
+        Returns detailed information about a specific training session
+        from the athlete's perspective.
+        
+        **Validates: Requirements 3.5**
+      operationId: getAthleteSessionDetails
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          description: Session UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionDetailResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Session not found or not accessible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from Supabase Auth
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      description: |
+        Unique key to ensure idempotent request processing. Use UUID or alphanumeric string.
+        Duplicate requests with the same key return cached response.
+      required: false
+      schema:
+        type: string
+        format: uuid
+
+    CorrelationId:
+      name: X-Correlation-ID
+      in: header
+      description: Correlation ID for request tracing across operations
+      required: false
+      schema:
+        type: string
+        format: uuid
+
+    CausationId:
+      name: X-Causation-ID
+      in: header
+      description: Causation ID linking cause and effect operations
+      required: false
+      schema:
+        type: string
+        format: uuid
+
+  headers:
+    RequestId:
+      description: Unique request identifier
+      schema:
+        type: string
+        format: uuid
+
+    IdempotencyCached:
+      description: Indicates if response was cached (idempotent request)
+      schema:
+        type: string
+        enum: ['true', 'false']
+
+    OriginalTimestamp:
+      description: Timestamp of original request (if cached)
+      schema:
+        type: string
+        format: date-time
+
+  schemas:
+    CreateSessionRequest:
+      type: object
+      required:
+        - title
+        - session_date
+        - start_time
+        - end_time
+        - location
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 200
+          description: Session title
+          example: ฝึกซ้อมประจำสัปดาห์
+        description:
+          type: string
+          maxLength: 1000
+          description: Session description (optional)
+          example: ฝึกทักษะพื้นฐานและการเล่นเป็นทีม
+        session_date:
+          type: string
+          format: date
+          description: Session date (must not be in the past)
+          example: "2025-12-01"
+        start_time:
+          type: string
+          pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+          description: Start time in HH:MM format
+          example: "16:00"
+        end_time:
+          type: string
+          pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+          description: End time in HH:MM format (must be after start_time)
+          example: "18:00"
+        location:
+          type: string
+          minLength: 2
+          maxLength: 200
+          description: Session location
+          example: สนามกีฬาหลัก
+
+    UpdateSessionRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 200
+          description: Session title
+        description:
+          type: string
+          maxLength: 1000
+          description: Session description
+        session_date:
+          type: string
+          format: date
+          description: Session date (must not be in the past)
+        start_time:
+          type: string
+          pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+          description: Start time in HH:MM format
+        end_time:
+          type: string
+          pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+          description: End time in HH:MM format (must be after start_time)
+        location:
+          type: string
+          minLength: 2
+          maxLength: 200
+          description: Session location
+
+    TrainingSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        club_id:
+          type: string
+          format: uuid
+        coach_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        session_date:
+          type: string
+          format: date
+        start_time:
+          type: string
+          pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+        end_time:
+          type: string
+          pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+        location:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        attendance_count:
+          type: integer
+          description: Number of athletes who attended (only in detail view)
+
+    SessionResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            session:
+              $ref: '#/components/schemas/TrainingSession'
+        metadata:
+          type: object
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+            requestId:
+              type: string
+              format: uuid
+            cached:
+              type: boolean
+            originalTimestamp:
+              type: string
+              format: date-time
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+    SessionListResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            sessions:
+              type: array
+              items:
+                $ref: '#/components/schemas/TrainingSession'
+            total:
+              type: integer
+              description: Total number of sessions matching filter
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+    SessionDetailResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/TrainingSession'
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+    SuccessResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          example: true
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              enum:
+                - VALIDATION_ERROR
+                - AUTHENTICATION_REQUIRED
+                - AUTHORIZATION_ERROR
+                - NOT_FOUND
+                - INVALID_IDEMPOTENCY_KEY
+                - RATE_LIMIT_EXCEEDED
+                - INTERNAL_ERROR
+            message:
+              type: string
+              description: Human-readable error message (Thai language)
+            details:
+              type: object
+              description: Additional error details
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: AUTHENTICATION_REQUIRED
+              message: กรุณาเข้าสู่ระบบ
+
+    RateLimitError:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: RATE_LIMIT_EXCEEDED
+              message: ลองบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying
+          schema:
+            type: integer
+            example: 60
+
+security:
+  - bearerAuth: []

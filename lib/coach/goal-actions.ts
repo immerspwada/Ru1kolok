@@ -36,7 +36,7 @@ export async function createGoal(input: CreateGoalInput) {
   }
 
   // Get coach profile
-  const { data: coach } = await supabase
+  const { data: coach } = await (supabase as any)
     .from('coaches')
     .select('id, club_id')
     .eq('user_id', user.id)
@@ -47,7 +47,7 @@ export async function createGoal(input: CreateGoalInput) {
   }
 
   // Verify athlete belongs to coach's club
-  const { data: athlete } = await supabase
+  const { data: athlete } = await (supabase as any)
     .from('athletes')
     .select('id, club_id')
     .eq('id', input.athleteId)
@@ -58,7 +58,7 @@ export async function createGoal(input: CreateGoalInput) {
   }
 
   // Create goal
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('athlete_goals')
     .insert({
       athlete_id: input.athleteId,
@@ -100,7 +100,7 @@ export async function updateGoal(input: UpdateGoalInput) {
   }
 
   // Get coach profile
-  const { data: coach } = await supabase
+  const { data: coach } = await (supabase as any)
     .from('coaches')
     .select('id')
     .eq('user_id', user.id)
@@ -123,7 +123,7 @@ export async function updateGoal(input: UpdateGoalInput) {
   if (input.targetDate) updateData.target_date = input.targetDate;
   if (input.status) updateData.status = input.status;
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('athlete_goals')
     .update(updateData)
     .eq('id', input.id)
@@ -157,7 +157,7 @@ export async function deleteGoal(goalId: string) {
   }
 
   // Get coach profile
-  const { data: coach } = await supabase
+  const { data: coach } = await (supabase as any)
     .from('coaches')
     .select('id')
     .eq('user_id', user.id)
@@ -167,7 +167,7 @@ export async function deleteGoal(goalId: string) {
     return { success: false, error: 'Coach profile not found' };
   }
 
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('athlete_goals')
     .delete()
     .eq('id', goalId)
@@ -190,7 +190,7 @@ export async function deleteGoal(goalId: string) {
 export async function getAthleteGoals(athleteId: string) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('athlete_goals')
     .select(
       `
@@ -227,7 +227,7 @@ export async function getCoachGoals() {
   }
 
   // Get coach profile
-  const { data: coach } = await supabase
+  const { data: coach } = await (supabase as any)
     .from('coaches')
     .select('id, club_id')
     .eq('user_id', user.id)
@@ -237,7 +237,7 @@ export async function getCoachGoals() {
     return { success: false, error: 'Coach profile not found', data: [] };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('athlete_goals')
     .select(
       `

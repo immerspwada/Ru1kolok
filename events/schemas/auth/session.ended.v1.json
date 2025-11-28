@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "org.club.auth.session.ended.v1",
+  "title": "Session Ended Event",
+  "description": "Published when a user logs out or a session expires",
+  "type": "object",
+  "required": ["eventId", "eventType", "timestamp", "data"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this event instance"
+    },
+    "eventType": {
+      "type": "string",
+      "const": "org.club.auth.session.ended.v1",
+      "description": "Event type identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the event occurred"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Correlation ID linking related operations"
+    },
+    "causationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Causation ID of the operation that triggered this event"
+    },
+    "data": {
+      "type": "object",
+      "required": ["sessionId", "userId", "endedAt", "endReason"],
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the login session"
+        },
+        "userId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User whose session ended"
+        },
+        "endedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when session ended"
+        },
+        "endReason": {
+          "type": "string",
+          "enum": ["logout", "timeout", "expired", "forced"],
+          "description": "Reason the session ended"
+        },
+        "sessionDuration": {
+          "type": "integer",
+          "description": "Duration of the session in seconds"
+        }
+      }
+    }
+  }
+}

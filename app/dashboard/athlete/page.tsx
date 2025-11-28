@@ -107,13 +107,13 @@ export default async function AthleteDashboard() {
 
   // Get statistics with error handling
   const { count: totalAttendance, error: totalAttError } = await supabase
-    .from('attendance_logs')
+    .from('attendance')
     .select('*', { count: 'exact', head: true })
     .eq('athlete_id', profile.id)
     .eq('status', 'present');
 
   const { count: monthlyAttendance, error: monthlyAttError } = await supabase
-    .from('attendance_logs')
+    .from('attendance')
     .select('*', { count: 'exact', head: true })
     .eq('athlete_id', profile.id)
     .eq('status', 'present')
@@ -126,7 +126,7 @@ export default async function AthleteDashboard() {
 
   // Get recent attendance (last 5)
   const { data: recentAttendance, error: recentAttError } = (await supabase
-    .from('attendance_logs')
+    .from('attendance')
     .select(
       `
       *,

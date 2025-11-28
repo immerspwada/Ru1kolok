@@ -33,17 +33,29 @@ export default async function AthleteAnnouncementsPage() {
     redirect('/dashboard/athlete');
   }
 
+  // First, get all coaches from the athlete's club
+  const { data: clubCoaches } = await supabase
+    .from('coaches')
+    .select('id')
+    .eq('club_id', athlete.club_id || '');
+
+  const coachIds = clubCoaches?.map(c => c.id) || [];
+
   // Get announcements from club coaches with read status
-  const { data: announcements } = await supabase
+  const { data: announcements, error } = await supabase
     .from('announcements')
     .select(`
       *,
-      coaches!inner(club_id),
       announcement_reads(user_id)
     `)
-    .eq('coaches.club_id', athlete.club_id || '')
+    .in('coach_id', coachIds.length > 0 ? coachIds : ['00000000-0000-0000-0000-000000000000'])
     .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false });
+
+  // Debug: log error if any
+  if (error) {
+    console.error('Error fetching announcements:', error);
+  }
 
   // Transform announcements to include read status
   const announcementsWithReadStatus = announcements?.map((announcement: any) => ({

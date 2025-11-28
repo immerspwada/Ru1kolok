@@ -1,0 +1,117 @@
+openapi: 3.1.0
+info:
+  title: Sports Club Management - Performance API
+  version: 1.0.0
+  description: Performance tracking and analytics endpoints
+  contact:
+    name: API Support
+    email: support@sportsclub.example.com
+
+servers:
+  - url: https://your-app.vercel.app/api
+    description: Production server
+
+tags:
+  - name: Performance Records
+    description: Performance recording and tracking
+
+paths:
+  /coach/performance:
+    post:
+      tags:
+        - Performance Records
+      summary: Record athlete performance
+      description: Record performance test results for an athlete
+      operationId: recordPerformance
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - athleteId
+                - testType
+                - testName
+                - score
+                - unit
+              properties:
+                athleteId:
+                  type: string
+                  format: uuid
+                testType:
+                  type: string
+                testName:
+                  type: string
+                score:
+                  type: number
+                unit:
+                  type: string
+                testDate:
+                  type: string
+                  format: date
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Performance recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /athlete/performance:
+    get:
+      tags:
+        - Performance Records
+      summary: Get athlete performance history
+      description: Returns performance records for authenticated athlete
+      operationId: getMyPerformance
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Performance history retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              error:
+                type: object
+
+security:
+  - bearerAuth: []

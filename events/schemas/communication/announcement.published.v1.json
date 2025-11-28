@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "org.club.communication.announcement.published.v1",
+  "title": "Announcement Published Event",
+  "description": "Published when a coach or admin posts an announcement",
+  "type": "object",
+  "required": ["eventId", "eventType", "timestamp", "data"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this event instance"
+    },
+    "eventType": {
+      "type": "string",
+      "const": "org.club.communication.announcement.published.v1",
+      "description": "Event type identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the event occurred"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Correlation ID linking related operations"
+    },
+    "causationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Causation ID of the operation that triggered this event"
+    },
+    "data": {
+      "type": "object",
+      "required": ["announcementId", "authorId", "authorRole", "title", "publishedAt"],
+      "properties": {
+        "announcementId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the announcement"
+        },
+        "clubId": {
+          "type": ["string", "null"],
+          "format": "uuid",
+          "description": "Club the announcement is for (null for system-wide)"
+        },
+        "authorId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User who created the announcement"
+        },
+        "authorRole": {
+          "type": "string",
+          "enum": ["admin", "coach"],
+          "description": "Role of the announcement author"
+        },
+        "title": {
+          "type": "string",
+          "description": "Announcement title"
+        },
+        "content": {
+          "type": "string",
+          "description": "Announcement content/body"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "normal", "high", "urgent"],
+          "description": "Priority level of the announcement"
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the announcement was published"
+        },
+        "expiresAt": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Optional expiration date for the announcement"
+        },
+        "targetAudience": {
+          "type": "string",
+          "enum": ["club", "system-wide"],
+          "description": "Who should receive this announcement"
+        },
+        "recipientCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of users who will receive this announcement"
+        }
+      }
+    }
+  }
+}

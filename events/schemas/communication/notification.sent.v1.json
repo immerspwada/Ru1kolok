@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "org.club.communication.notification.sent.v1",
+  "title": "Notification Sent Event",
+  "description": "Published when a notification is sent to a user",
+  "type": "object",
+  "required": ["eventId", "eventType", "timestamp", "data"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this event instance"
+    },
+    "eventType": {
+      "type": "string",
+      "const": "org.club.communication.notification.sent.v1",
+      "description": "Event type identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the event occurred"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Correlation ID linking related operations"
+    },
+    "causationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Causation ID of the operation that triggered this event"
+    },
+    "data": {
+      "type": "object",
+      "required": ["notificationId", "userId", "notificationType", "title", "sentAt"],
+      "properties": {
+        "notificationId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the notification"
+        },
+        "userId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User who received the notification"
+        },
+        "notificationType": {
+          "type": "string",
+          "description": "Type of notification (e.g., application_approved, session_created, announcement_published)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Notification title"
+        },
+        "message": {
+          "type": "string",
+          "description": "Notification message body"
+        },
+        "relatedId": {
+          "type": ["string", "null"],
+          "format": "uuid",
+          "description": "ID of the related entity (application, session, etc.)"
+        },
+        "relatedType": {
+          "type": ["string", "null"],
+          "description": "Type of the related entity (application, session, announcement, etc.)"
+        },
+        "sentAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the notification was sent"
+        },
+        "channels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["in-app", "email", "push", "sms"]
+          },
+          "description": "Channels through which the notification was sent"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "normal", "high", "urgent"],
+          "description": "Priority level of the notification"
+        },
+        "deepLink": {
+          "type": ["string", "null"],
+          "description": "Optional deep link URL for navigation"
+        }
+      }
+    }
+  }
+}
