@@ -87,7 +87,7 @@ export default async function AttendanceHistoryPage() {
           )}
 
           {/* Attendance History */}
-          <AttendanceHistory records={attendanceRecords || []} />
+          <AttendanceHistory records={(attendanceRecords || []) as any} />
         </div>
       </div>
     </div>
