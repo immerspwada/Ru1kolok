@@ -10,7 +10,7 @@ interface RateLimitEntry {
   resetTime: number;
 }
 
-interface RateLimitConfig {
+export interface RateLimitConfig {
   maxRequests: number;
   windowMs: number; // Time window in milliseconds
 }
