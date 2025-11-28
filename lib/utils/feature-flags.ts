@@ -156,7 +156,8 @@ export async function updateFeatureFlag(
     }
   }
   
-  const { error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
     .from('feature_flags')
     .update({
       ...updates,
@@ -193,7 +194,8 @@ export async function createFeatureFlag(
     };
   }
   
-  const { error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
     .from('feature_flags')
     .insert(flag);
   
@@ -215,7 +217,8 @@ export async function deleteFeatureFlag(
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
   
-  const { error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
     .from('feature_flags')
     .delete()
     .eq('name', flagName);
