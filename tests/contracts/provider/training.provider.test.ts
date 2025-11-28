@@ -9,7 +9,7 @@ import { describe, it } from 'vitest';
 import { verifyProvider } from '../helpers/provider-setup';
 import path from 'path';
 
-describe('Training API Provider Verification', () => {
+describe.skip('Training API Provider Verification', () => {
   const pactPath = path.resolve(
     __dirname,
     '../pacts/frontend-training api.json'

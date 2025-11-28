@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { CheckInButton } from '../CheckInButton';
 import * as attendanceActions from '@/lib/athlete/attendance-actions';
+import { ToastProvider } from '@/components/ui/toast';
+import React from 'react';
 
 // Mock the attendance actions
 vi.mock('@/lib/athlete/attendance-actions', () => ({
@@ -15,6 +17,15 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
+// Wrapper component with providers
+const TestWrapper = ({ children }: { children: React.ReactNode }) => (
+  <ToastProvider>{children}</ToastProvider>
+);
+
+const renderWithProviders = (ui: React.ReactElement) => {
+  return render(ui, { wrapper: TestWrapper });
+};
+
 describe('CheckInButton', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -25,7 +36,7 @@ describe('CheckInButton', () => {
     const sessionDate = now.toISOString().split('T')[0];
     const sessionTime = now.toTimeString().split(' ')[0];
 
-    render(
+    renderWithProviders(
       <CheckInButton
         sessionId="test-session-id"
         sessionDate={sessionDate}
@@ -43,7 +54,7 @@ describe('CheckInButton', () => {
     const sessionDate = futureDate.toISOString().split('T')[0];
     const sessionTime = futureDate.toTimeString().split(' ')[0];
 
-    render(
+    renderWithProviders(
       <CheckInButton
         sessionId="test-session-id"
         sessionDate={sessionDate}
@@ -62,7 +73,7 @@ describe('CheckInButton', () => {
     const sessionDate = pastDate.toISOString().split('T')[0];
     const sessionTime = pastDate.toTimeString().split(' ')[0];
 
-    render(
+    renderWithProviders(
       <CheckInButton
         sessionId="test-session-id"
         sessionDate={sessionDate}
@@ -82,7 +93,7 @@ describe('CheckInButton', () => {
     const dateStr = sessionDate.toISOString().split('T')[0];
     const timeStr = sessionDate.toTimeString().split(' ')[0];
 
-    render(
+    renderWithProviders(
       <CheckInButton
         sessionId="test-session-id"
         sessionDate={dateStr}
@@ -111,7 +122,7 @@ describe('CheckInButton', () => {
     const dateStr = sessionDate.toISOString().split('T')[0];
     const timeStr = sessionDate.toTimeString().split(' ')[0];
 
-    render(
+    renderWithProviders(
       <CheckInButton
         sessionId="test-session-id"
         sessionDate={dateStr}
@@ -145,7 +156,7 @@ describe('CheckInButton', () => {
     const dateStr = sessionDate.toISOString().split('T')[0];
     const timeStr = sessionDate.toTimeString().split(' ')[0];
 
-    render(
+    renderWithProviders(
       <CheckInButton
         sessionId="test-session-id"
         sessionDate={dateStr}
@@ -178,7 +189,7 @@ describe('CheckInButton', () => {
     const dateStr = sessionDate.toISOString().split('T')[0];
     const timeStr = sessionDate.toTimeString().split(' ')[0];
 
-    render(
+    renderWithProviders(
       <CheckInButton
         sessionId="test-session-id"
         sessionDate={dateStr}
@@ -213,7 +224,7 @@ describe('CheckInButton', () => {
     const dateStr = sessionDate.toISOString().split('T')[0];
     const timeStr = sessionDate.toTimeString().split(' ')[0];
 
-    render(
+    renderWithProviders(
       <CheckInButton
         sessionId="test-session-id"
         sessionDate={dateStr}
@@ -248,7 +259,7 @@ describe('CheckInButton', () => {
     const dateStr = sessionDate.toISOString().split('T')[0];
     const timeStr = sessionDate.toTimeString().split(' ')[0];
 
-    render(
+    renderWithProviders(
       <CheckInButton
         sessionId="test-session-id"
         sessionDate={dateStr}

@@ -104,7 +104,7 @@ export function SimpleLoginForm() {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" aria-label="แบบฟอร์มเข้าสู่ระบบ">
           <div>
             <label htmlFor="email" className="block text-base font-medium text-gray-700 mb-2">
               อีเมล
@@ -190,7 +190,11 @@ export function SimpleLoginForm() {
             error ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'
           }`}>
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-base text-red-700 animate-shake">
+              <div 
+                role="alert" 
+                aria-live="polite"
+                className="p-3 bg-red-50 border border-red-200 rounded-lg text-base text-red-700 animate-shake"
+              >
                 {error}
               </div>
             )}

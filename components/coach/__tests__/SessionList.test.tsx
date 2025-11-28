@@ -2,8 +2,27 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SessionList } from '../SessionList';
 import { Database } from '@/types/database.types';
+import { ToastProvider } from '@/components/ui/toast';
+import React from 'react';
+
+// Mock next/navigation
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
 
 type TrainingSession = Database['public']['Tables']['training_sessions']['Row'];
+
+// Wrapper component with providers
+const TestWrapper = ({ children }: { children: React.ReactNode }) => (
+  <ToastProvider>{children}</ToastProvider>
+);
+
+const renderWithProviders = (ui: React.ReactElement) => {
+  return render(ui, { wrapper: TestWrapper });
+};
 
 describe('SessionList', () => {
   const mockSessions: (TrainingSession & { attendance_count?: number })[] = [
@@ -44,7 +63,7 @@ describe('SessionList', () => {
   ];
 
   it('renders filter tabs', () => {
-    render(<SessionList sessions={mockSessions} />);
+    renderWithProviders(<SessionList sessions={mockSessions} />);
 
     expect(screen.getByText('กำลังจะมาถึง')).toBeInTheDocument();
     expect(screen.getByText('ผ่านมาแล้ว')).toBeInTheDocument();
@@ -52,14 +71,14 @@ describe('SessionList', () => {
   });
 
   it('filters upcoming sessions by default', () => {
-    render(<SessionList sessions={mockSessions} />);
+    renderWithProviders(<SessionList sessions={mockSessions} />);
 
     expect(screen.getByText('Morning Practice')).toBeInTheDocument();
     expect(screen.queryByText('Past Practice')).not.toBeInTheDocument();
   });
 
   it('shows past sessions when past tab is clicked', () => {
-    render(<SessionList sessions={mockSessions} />);
+    renderWithProviders(<SessionList sessions={mockSessions} />);
 
     fireEvent.click(screen.getByText('ผ่านมาแล้ว'));
 
@@ -68,7 +87,7 @@ describe('SessionList', () => {
   });
 
   it('shows all sessions when all tab is clicked', () => {
-    render(<SessionList sessions={mockSessions} />);
+    renderWithProviders(<SessionList sessions={mockSessions} />);
 
     fireEvent.click(screen.getByText('ทั้งหมด'));
 
@@ -77,7 +96,7 @@ describe('SessionList', () => {
   });
 
   it('shows empty state when no sessions match filter', () => {
-    render(<SessionList sessions={[]} />);
+    renderWithProviders(<SessionList sessions={[]} />);
 
     expect(screen.getByText('ไม่มีตารางฝึกซ้อม')).toBeInTheDocument();
     expect(
@@ -90,7 +109,7 @@ describe('SessionList', () => {
     const onEdit = vi.fn();
     const onCancel = vi.fn();
 
-    render(
+    renderWithProviders(
       <SessionList
         sessions={mockSessions}
         onViewDetails={onViewDetails}

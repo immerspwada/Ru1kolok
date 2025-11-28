@@ -18,17 +18,20 @@ function StatCard({ title, value, icon: Icon, color }: StatCardProps) {
   };
 
   return (
-    <div className="rounded-lg bg-white p-6 shadow">
+    <article 
+      className="rounded-lg bg-white p-6 shadow"
+      aria-label={`${title}: ${value}`}
+    >
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-gray-600">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900">{value}</p>
+          <p className="mt-2 text-3xl font-bold text-gray-900" aria-live="polite">{value}</p>
         </div>
-        <div className={`rounded-full p-3 ${colorClasses[color]}`}>
+        <div className={`rounded-full p-3 ${colorClasses[color]}`} aria-hidden="true">
           <Icon className="h-6 w-6" />
         </div>
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -46,7 +49,7 @@ export default function DashboardStats({
   progressPercentage,
 }: DashboardStatsProps) {
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+    <section aria-label="สถิติภาพรวม" className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       <StatCard
         title="การเข้าร่วมทั้งหมด"
         value={totalAttendance}
