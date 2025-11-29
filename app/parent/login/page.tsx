@@ -1,14 +1,16 @@
 import { ParentLoginForm } from '@/components/parent/ParentLoginForm';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getParentSession } from '@/lib/parent-auth/actions';
+import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ParentLoginPage() {
   // ถ้าล็อกอินอยู่แล้ว redirect ไป dashboard
-  const session = await getParentSession();
-  if (session) {
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get('parent_session')?.value;
+  
+  if (sessionToken) {
     redirect('/parent/dashboard');
   }
 
