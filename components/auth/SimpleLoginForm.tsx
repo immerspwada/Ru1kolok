@@ -7,12 +7,9 @@ import { getDeviceInfo } from '@/lib/utils/device-fingerprint';
 import Link from 'next/link';
 
 const TEST_USERS = {
-  admin: { email: 'admin@test.com', password: 'Admin123!' },
-  coach: { email: 'coach@test.com', password: 'Coach123!' },
-  athlete: { email: 'athlete@test.com', password: 'Athlete123!' },
-  athlete2: { email: 'athlete2@test.com', password: 'Athlete123!' },
-  athlete3: { email: 'athlete3@test.com', password: 'Athlete123!' },
-  athlete4: { email: 'athlete4@test.com', password: 'Athlete123!' },
+  admin: { email: 'demo.admin@clubdee.com', password: 'Demo123456!' },
+  coach: { email: 'demo.coach@clubdee.com', password: 'Demo123456!' },
+  athlete: { email: 'demo.athlete@clubdee.com', password: 'Demo123456!' },
 };
 
 const STORAGE_KEY = 'sports_club_login';
@@ -265,53 +262,28 @@ export function SimpleLoginForm() {
             }`}>
               <div className="space-y-2">
                 <div className="text-xs font-semibold text-gray-600 px-3 py-2 uppercase tracking-wide">
-                  Core Users
+                  Demo Users (ClubDee)
                 </div>
                 <button
                   type="button"
                   onClick={() => fillCredentials('admin')}
                   className="w-full px-3 py-3 text-base bg-gray-50 hover:bg-gray-100 active:bg-gray-100 border border-gray-200 rounded-lg transition-all duration-200 touch-manipulation transform hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  👨‍💼 Admin
+                  👨‍💼 Demo Admin
                 </button>
                 <button
                   type="button"
                   onClick={() => fillCredentials('coach')}
                   className="w-full px-3 py-3 text-base bg-gray-50 hover:bg-gray-100 active:bg-gray-100 border border-gray-200 rounded-lg transition-all duration-200 touch-manipulation transform hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  🏃‍♂️ Coach
+                  🏃‍♂️ Demo Coach
                 </button>
                 <button
                   type="button"
                   onClick={() => fillCredentials('athlete')}
                   className="w-full px-3 py-3 text-base bg-gray-50 hover:bg-gray-100 active:bg-gray-100 border border-gray-200 rounded-lg transition-all duration-200 touch-manipulation transform hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  🏅 Athlete (Original)
-                </button>
-
-                <div className="text-xs font-semibold text-gray-600 px-3 py-2 uppercase tracking-wide mt-3">
-                  Badminton Demo Athletes
-                </div>
-                <button
-                  type="button"
-                  onClick={() => fillCredentials('athlete2')}
-                  className="w-full px-3 py-3 text-base bg-blue-50 hover:bg-blue-100 active:bg-blue-100 border border-blue-200 rounded-lg transition-all duration-200 touch-manipulation transform hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  🏸 Somchai (Athlete 2)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillCredentials('athlete3')}
-                  className="w-full px-3 py-3 text-base bg-blue-50 hover:bg-blue-100 active:bg-blue-100 border border-blue-200 rounded-lg transition-all duration-200 touch-manipulation transform hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  🏸 Niran (Athlete 3)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillCredentials('athlete4')}
-                  className="w-full px-3 py-3 text-base bg-blue-50 hover:bg-blue-100 active:bg-blue-100 border border-blue-200 rounded-lg transition-all duration-200 touch-manipulation transform hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  🏸 Pim (Athlete 4)
+                  🏅 Demo Athlete
                 </button>
               </div>
             </div>

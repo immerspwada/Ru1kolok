@@ -7,15 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 
 interface SessionDetailsPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function SessionDetailsPage({
   params,
 }: SessionDetailsPageProps) {
-  const { id } = params;
+  const { id } = await params;
 
   // Fetch session details
   const sessionResult = await getSessionDetails(id);

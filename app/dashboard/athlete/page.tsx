@@ -164,18 +164,29 @@ export default async function AthleteDashboard() {
   // Get announcements from club coaches (only if club exists)
   let announcements = null;
   if (profile.clubs?.id) {
-    const { data, error: annError } = await supabase
-      .from('announcements')
-      .select(`
-        *,
-        announcement_reads!left(user_id)
-      `)
-      .eq('club_id', profile.clubs.id)
-      .order('is_pinned', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(5);
-    
-    announcements = data;
+    // First, get all coaches from the athlete's club
+    const { data: clubCoaches } = await supabase
+      .from('coaches')
+      .select('id')
+      .eq('club_id', profile.clubs.id) as { data: { id: string }[] | null };
+
+    const coachIds = clubCoaches?.map(c => c.id) || [];
+
+    // Get announcements from club coaches
+    if (coachIds.length > 0) {
+      const { data, error: annError } = await supabase
+        .from('announcements')
+        .select(`
+          *,
+          announcement_reads!left(user_id)
+        `)
+        .in('coach_id', coachIds)
+        .order('is_pinned', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      announcements = data;
+    }
   }
 
   // Get upcoming sessions count (only if club exists)

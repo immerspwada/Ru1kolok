@@ -32,10 +32,11 @@ export default async function DashboardPage() {
 
   if (roleError || !userRole) {
     // If no role found, check if user has a profile
+    // Note: profiles.id = auth.users.id (not user_id column)
     const profileResult = await supabase
       .from('profiles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .single();
     const profile = profileResult.data as { role: string } | null;
 

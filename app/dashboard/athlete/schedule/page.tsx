@@ -30,19 +30,27 @@ export default async function SchedulePage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // Note: coach_id references auth.users, not coaches table
+  // So we can't use Supabase's automatic join
   const allSessionsResult = await supabase
     .from('training_sessions')
-    .select(`
-      *,
-      coaches (
-        first_name,
-        last_name
-      )
-    `)
+    .select('*')
     .eq('club_id', athlete.club_id)
     .order('session_date', { ascending: true })
     .order('start_time', { ascending: true });
   const allSessions = allSessionsResult.data as any[] | null;
+
+  // Get coaches for this club to map coach names
+  const coachesResult = await supabase
+    .from('coaches')
+    .select('user_id, first_name, last_name')
+    .eq('club_id', athlete.club_id);
+  const coaches = coachesResult.data || [];
+  
+  // Create coach map (user_id -> name)
+  const coachMap = new Map(
+    coaches.map((c) => [c.user_id, `${c.first_name} ${c.last_name}`])
+  );
 
   // Get attendance records for this athlete
   const attendanceRecordsResult = await supabase
@@ -83,9 +91,7 @@ export default async function SchedulePage() {
       check_in_time: attendance?.check_in_time,
       is_past: isPast,
       is_today: isToday,
-      coach_name: session.coaches 
-        ? `${session.coaches.first_name} ${session.coaches.last_name}`
-        : undefined,
+      coach_name: session.coach_id ? coachMap.get(session.coach_id) : undefined,
     };
   }) || [];
 

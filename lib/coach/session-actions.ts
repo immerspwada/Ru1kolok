@@ -93,10 +93,12 @@ export async function createSession(data: {
     const sanitizedDescription = data.description ? sanitizeInput(data.description) : null;
 
     // Create session with sanitized data
+    // Note: coach_id in training_sessions references auth.users(id), not coaches(id)
     const coachData = coach as Coach;
-    const sessionData: TrainingSessionInsert = {
+    const sessionData = {
       club_id: coachData.club_id,
-      coach_id: coachData.id,
+      coach_id: coachData.user_id, // Use user_id since FK references auth.users
+      created_by: user.id, // Required for RLS policy check
       title: sanitizedTitle,
       description: sanitizedDescription,
       session_date: data.session_date,
@@ -189,8 +191,9 @@ export async function updateSession(
       return { error: 'ไม่พบตารางฝึกซ้อม' };
     }
 
+    // Note: coach_id references auth.users(id), so compare with user_id
     // @ts-ignore
-    if (session.coach_id !== coach.id) {
+    if (session.coach_id !== coach.user_id) {
       return { error: 'ไม่ได้รับอนุญาต: คุณไม่สามารถแก้ไขตารางของโค้ชอื่นได้' };
     }
 
@@ -305,8 +308,9 @@ export async function cancelSession(sessionId: string): Promise<{ success?: bool
       return { error: 'ไม่พบตารางฝึกซ้อม' };
     }
 
+    // Note: coach_id references auth.users(id), so compare with user_id
     // @ts-ignore
-    if (session.coach_id !== coach.id) {
+    if (session.coach_id !== coach.user_id) {
       return { error: 'ไม่ได้รับอนุญาต: คุณไม่สามารถยกเลิกตารางของโค้ชอื่นได้' };
     }
 
@@ -387,12 +391,14 @@ export async function getCoachSessions(filter?: {
     const limit = filter?.limit || 100; // Default limit
     const offset = filter?.offset || 0;
 
+    // Note: coach_id in training_sessions references auth.users(id), not coaches(id)
+    // So we use coach.user_id to match
     // @ts-ignore
     let query = supabase
       .from('training_sessions')
       .select('*', { count: 'exact' })
       // @ts-ignore
-      .eq('coach_id', coach.id)
+      .eq('coach_id', coach.user_id) // Use user_id since FK references auth.users
       .order('session_date', { ascending: true })
       .order('start_time', { ascending: true })
       .range(offset, offset + limit - 1);
