@@ -33,7 +33,5 @@ export default async function ParentDashboardPage() {
   return <ParentDashboard parentUser={{
     id: session.parent_users.id,
     email: session.parent_users.email,
-    last_login_at: session.parent_users.last_login_at,
-    login_count: session.parent_users.login_count,
   }} />;
 }

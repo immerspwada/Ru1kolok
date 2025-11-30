@@ -11,6 +11,7 @@ interface Params {
 }
 
 export default async function AthleteDetailPage({ params }: { params: Params }) {
+  const { id } = await params;
   const supabase = await createClient();
 
   const {
@@ -23,9 +24,10 @@ export default async function AthleteDetailPage({ params }: { params: Params }) 
 
   // Get coach profile
   const coachResult = await supabase
-    .from('coaches')
+    .from('profiles')
     .select('id, club_id')
-    .eq('user_id', user.id)
+    .eq('id', user.id)
+    .eq('role', 'coach')
     .maybeSingle();
   const coach = coachResult.data as { id: string; club_id: string } | null;
 

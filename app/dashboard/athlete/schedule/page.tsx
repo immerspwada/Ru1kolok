@@ -42,14 +42,15 @@ export default async function SchedulePage() {
 
   // Get coaches for this club to map coach names
   const coachesResult = await supabase
-    .from('coaches')
-    .select('user_id, first_name, last_name')
-    .eq('club_id', athlete.club_id);
+    .from('profiles')
+    .select('id, full_name')
+    .eq('club_id', athlete.club_id)
+    .eq('role', 'coach');
   const coaches = coachesResult.data || [];
   
-  // Create coach map (user_id -> name)
+  // Create coach map (id -> name)
   const coachMap = new Map(
-    coaches.map((c) => [c.user_id, `${c.first_name} ${c.last_name}`])
+    coaches.map((c: any) => [c.id, c.full_name])
   );
 
   // Get attendance records for this athlete

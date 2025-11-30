@@ -12,6 +12,7 @@ interface PageProps {
 }
 
 export default async function CoachAttendanceMarkingPage({ params }: PageProps) {
+  const { sessionId } = await params;
   const supabase = await createClient();
 
   // Check authentication
@@ -26,8 +27,10 @@ export default async function CoachAttendanceMarkingPage({ params }: PageProps) 
 
   // Get coach profile
   const { data: coach } = await supabase
-    .from('coaches')
+    .from('profiles')
     .select('id, club_id')
+    .eq('id', user.id)
+    .eq('role', 'coach')
     .eq('user_id', user.id)
     .maybeSingle();
 
@@ -36,7 +39,7 @@ export default async function CoachAttendanceMarkingPage({ params }: PageProps) 
   }
 
   // Fetch session and athletes
-  const { data: athletes, session, error } = await getSessionAttendance(params.sessionId);
+  const { data: athletes, session, error } = await getSessionAttendance(sessionId);
 
   if (error || !session || !athletes) {
     return (
