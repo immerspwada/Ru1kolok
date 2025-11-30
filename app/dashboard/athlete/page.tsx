@@ -641,7 +641,7 @@ export default async function AthleteDashboard() {
                 </span>
               ) : null;
             })()}
-            <span className="text-xs text-gray-700 text-center">ประกาศ</span>
+            <span className="text-xs text-gray-700 text-center">ประกาศจากโค้ช</span>
           </Link>
 
           <Link
@@ -653,7 +653,7 @@ export default async function AthleteDashboard() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
               </svg>
             </div>
-            <span className="text-xs text-gray-700 text-center">กิจกรรม</span>
+            <span className="text-xs text-gray-700 text-center">เข้าร่วมกิจกรรม</span>
           </Link>
 
           <Link
@@ -663,7 +663,7 @@ export default async function AthleteDashboard() {
             <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
               <CalendarDays className="w-6 h-6 text-black" />
             </div>
-            <span className="text-xs text-gray-700 text-center">ตารางฝึก</span>
+            <span className="text-xs text-gray-700 text-center">ตารางฝึกซ้อม</span>
           </Link>
 
           <Link
@@ -673,7 +673,7 @@ export default async function AthleteDashboard() {
             <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
               <TrendingUp className="w-6 h-6 text-black" />
             </div>
-            <span className="text-xs text-gray-700 text-center">ผลทดสอบ</span>
+            <span className="text-xs text-gray-700 text-center">ผลทดสอบของฉัน</span>
           </Link>
         </div>
       </div>

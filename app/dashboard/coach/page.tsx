@@ -11,7 +11,8 @@ import {
   UserCheck,
   Settings,
   Bell,
-  ChevronRight
+  ChevronRight,
+  Award
 } from 'lucide-react';
 import Link from 'next/link';
 import { CoachBottomNav } from '@/components/coach/CoachBottomNav';
@@ -199,8 +200,8 @@ export default async function CoachDashboard() {
                     <Bell className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="font-semibold text-black">ประกาศแจ้งเตือน</p>
-                    <p className="text-xs text-gray-500">สร้างและจัดการประกาศ</p>
+                    <p className="font-semibold text-black">สร้างประกาศ</p>
+                    <p className="text-xs text-gray-500">ประกาศข่าวสารให้นักกีฬา</p>
                   </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-gray-400" />
@@ -214,8 +215,8 @@ export default async function CoachDashboard() {
                     <FileText className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="font-semibold text-black">ใบสมัครสมาชิก</p>
-                    <p className="text-xs text-gray-500">พิจารณาใบสมัครเข้าร่วม</p>
+                    <p className="font-semibold text-black">พิจารณาใบสมัคร</p>
+                    <p className="text-xs text-gray-500">อนุมัติ/ปฏิเสธใบสมัครสมาชิก</p>
                   </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-gray-400" />
@@ -229,8 +230,8 @@ export default async function CoachDashboard() {
                     <Users className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="font-semibold text-black">จัดการนักกีฬา</p>
-                    <p className="text-xs text-gray-500">ดูและจัดการข้อมูล</p>
+                    <p className="font-semibold text-black">รายชื่อนักกีฬา</p>
+                    <p className="text-xs text-gray-500">ดูข้อมูลและจัดการนักกีฬา</p>
                   </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-gray-400" />
@@ -253,8 +254,23 @@ export default async function CoachDashboard() {
                     <Calendar className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="font-semibold text-black">ตารางฝึกซ้อม</p>
-                    <p className="text-xs text-gray-500">สร้างและจัดการตาราง</p>
+                    <p className="font-semibold text-black">สร้างตารางฝึก</p>
+                    <p className="text-xs text-gray-500">กำหนดวันเวลาฝึกซ้อม</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </Link>
+              <Link
+                href="/dashboard/coach/activities"
+                className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
+                    <Activity className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-black">สร้างกิจกรรม</p>
+                    <p className="text-xs text-gray-500">สร้างกิจกรรมพิเศษ/QR Check-in</p>
                   </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-gray-400" />
@@ -265,11 +281,11 @@ export default async function CoachDashboard() {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
-                    <Activity className="h-5 w-5 text-white" />
+                    <Award className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="font-semibold text-black">ทัวร์นาเมนต์</p>
-                    <p className="text-xs text-gray-500">เลือกนักกีฬาเข้าร่วม</p>
+                    <p className="font-semibold text-black">จัดการทัวร์นาเมนต์</p>
+                    <p className="text-xs text-gray-500">เลือกนักกีฬาเข้าแข่งขัน</p>
                   </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-gray-400" />
@@ -283,8 +299,8 @@ export default async function CoachDashboard() {
                     <ClipboardList className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="font-semibold text-black">เช็คชื่อ</p>
-                    <p className="text-xs text-gray-500">บันทึกการเข้าร่วม</p>
+                    <p className="font-semibold text-black">บันทึกการเข้าร่วม</p>
+                    <p className="text-xs text-gray-500">เช็คชื่อนักกีฬา</p>
                   </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-gray-400" />
@@ -307,8 +323,8 @@ export default async function CoachDashboard() {
                     <BarChart3 className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="font-semibold text-black">บันทึกผลการทดสอบ</p>
-                    <p className="text-xs text-gray-500">บันทึกและติดตามผล</p>
+                    <p className="font-semibold text-black">บันทึกผลทดสอบ</p>
+                    <p className="text-xs text-gray-500">บันทึกและติดตามพัฒนาการ</p>
                   </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-gray-400" />
